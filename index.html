@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIKRANT VIKRAM — Research System Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,200;0,300;0,400;1,200;1,300&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --paper:#F3EEE4;
+  --paper2:#EDE7D9;
+  --ink:#1C1C1C;
+  --ink2:#3A3A3A;
+  --ghost:rgba(28,28,28,0.12);
+  --ghost2:rgba(28,28,28,0.06);
+  --green:#3D6B4F;
+  --green2:#5A8F6E;
+  --gold:#8A7040;
+  --gold2:#C4A96A;
+  --rust:#7A3D28;
+  --serif:'Cormorant Garamond',Georgia,serif;
+  --mono:'Space Mono',monospace;
+  --body:'Crimson Pro',serif;
+}
+
+html{scroll-behavior:smooth;font-size:13px}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--body);
+  overflow-x:hidden;
+  cursor:crosshair;
+}
+
+/* PAPER TEXTURE OVERLAY */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  pointer-events:none;
+  z-index:9000;
+  opacity:0.55;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size:300px;
+  mix-blend-mode:multiply;
+}
+
+/* GRID OVERLAY */
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  pointer-events:none;
+  z-index:8999;
+  background-image:
+    linear-gradient(rgba(28,28,28,0.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(28,28,28,0.04) 1px,transparent 1px);
+  background-size:48px 48px;
+}
+
+/* ========================
+   BOARD CANVAS — scrollable large canvas
+   ======================== */
+.board{
+  position:relative;
+  width:100%;
+  min-height:100vh;
+  padding:0;
+}
+
+/* ========================
+   TOP HEADER BAND — like "BALANCE OF SITUATION"
+   ======================== */
+.header-band{
+  position:relative;
+  display:flex;
+  align-items:flex-start;
+  gap:0;
+  border-bottom:2px solid var(--ink);
+  background:var(--paper);
+  z-index:10;
+}
+
+.hb-title{
+  flex:0 0 auto;
+  padding:18px 32px 14px 32px;
+  border-right:2px solid var(--ink);
+}
+
+.hb-name{
+  font-family:var(--serif);
+  font-size:clamp(42px,6.5vw,90px);
+  font-weight:700;
+  line-height:0.88;
+  letter-spacing:-0.04em;
+  color:var(--ink);
+}
+.hb-name em{
+  font-style:italic;
+  color:var(--green);
+}
+
+.hb-meta{
+  flex:1;
+  padding:18px 28px 14px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  border-right:2px solid var(--ink);
+}
+.hb-meta-top{
+  font-family:var(--mono);
+  font-size:8.5px;
+  letter-spacing:0.22em;
+  text-transform:uppercase;
+  color:var(--ink2);
+  line-height:2;
+}
+.hb-meta-top strong{color:var(--green);}
+
+.hb-desc{
+  flex:0 0 280px;
+  padding:18px 24px 14px;
+  border-right:2px solid var(--ink);
+}
+.hb-desc p{
+  font-family:var(--body);
+  font-size:10.5px;
+  line-height:1.75;
+  color:var(--ink2);
+  font-weight:300;
+}
+
+.hb-index{
+  flex:0 0 auto;
+  padding:18px 24px 14px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.hb-index span{
+  font-family:var(--mono);
+  font-size:8px;
+  letter-spacing:0.15em;
+  text-transform:uppercase;
+  color:var(--gold);
+}
+
+/* ========================
+   MAIN CANVAS BODY
+   ======================== */
+.canvas-body{
+  position:relative;
+  display:grid;
+  grid-template-columns:260px 1fr 240px;
+  grid-template-rows:auto;
+  min-height:calc(100vh - 120px);
+  border-bottom:2px solid var(--ink);
+}
+
+/* ========================
+   LEFT COLUMN
+   ======================== */
+.col-left{
+  border-right:2px solid var(--ink);
+  display:flex;
+  flex-direction:column;
+}
+
+.left-block{
+  border-bottom:1px solid var(--ghost);
+  padding:20px 20px 18px;
+  position:relative;
+}
+.left-block:last-child{border-bottom:none;}
+
+.block-label{
+  font-family:var(--mono);
+  font-size:7.5px;
+  letter-spacing:0.28em;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin-bottom:12px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.block-label::before{
+  content:'';
+  display:block;
+  width:16px;
+  height:1px;
+  background:var(--gold);
+}
+
+.edu-timeline{
+  position:relative;
+  padding-left:16px;
+  border-left:1px dashed var(--ghost);
+}
+.edu-item{
+  margin-bottom:16px;
+  position:relative;
+}
+.edu-item::before{
+  content:'◆';
+  position:absolute;
+  left:-22px;
+  top:2px;
+  font-size:6px;
+  color:var(--green);
+}
+.edu-deg{
+  font-family:var(--serif);
+  font-size:14px;
+  font-weight:600;
+  line-height:1.2;
+  margin-bottom:3px;
+}
+.edu-inst{
+  font-family:var(--mono);
+  font-size:8px;
+  letter-spacing:0.1em;
+  color:var(--ink2);
+  text-transform:uppercase;
+}
+.edu-year{
+  font-family:var(--mono);
+  font-size:7px;
+  color:var(--gold);
+  letter-spacing:0.1em;
+  margin-top:2px;
+}
+
+/* SKILLS MAP */
+.skills-cluster{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.skill-group{
+  position:relative;
+}
+.skill-group-label{
+  font-family:var(--mono);
+  font-size:7.5px;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  color:var(--rust);
+  margin-bottom:6px;
+}
+.skill-tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+}
+.stag{
+  font-family:var(--mono);
+  font-size:7.5px;
+  letter-spacing:0.08em;
+  padding:2px 7px;
+  border:1px solid var(--ghost);
+  color:var(--ink2);
+  background:var(--paper2);
+  transition:all 0.2s;
+  cursor:default;
+}
+.stag:hover{
+  border-color:var(--green);
+  color:var(--green);
+  background:rgba(61,107,79,0.06);
+}
+.stag.hi{
+  border-color:var(--gold2);
+  color:var(--gold);
+  background:rgba(138,112,64,0.07);
+}
+
+/* MICRO ANNOTATIONS */
+.annotation{
+  font-family:var(--mono);
+  font-size:7px;
+  color:rgba(28,28,28,0.38);
+  letter-spacing:0.12em;
+  line-height:1.8;
+  font-style:italic;
+}
+
+/* COURSES */
+.course-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:3px;
+}
+.course-item{
+  font-family:var(--body);
+  font-size:10px;
+  color:var(--ink2);
+  padding:3px 5px;
+  border-left:2px solid var(--ghost);
+  line-height:1.4;
+}
+.course-item.accent{border-left-color:var(--green);}
+
+/* ========================
+   CENTRAL COLUMN — THE MAP
+   ======================== */
+.col-center{
+  position:relative;
+  overflow:hidden;
+}
+
+/* RESEARCH SYSTEM MAP SVG */
+.system-map{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+}
+
+/* CENTER IDENTITY */
+.identity-zone{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  text-align:center;
+  z-index:5;
+  pointer-events:none;
+}
+.id-rings{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:180px;height:180px;
+  pointer-events:none;
+}
+
+.id-name{
+  font-family:var(--serif);
+  font-size:clamp(26px,3.5vw,44px);
+  font-weight:700;
+  line-height:0.92;
+  letter-spacing:-0.03em;
+  color:var(--ink);
+  position:relative;
+  z-index:2;
+}
+.id-name em{font-style:italic;color:var(--green);}
+.id-role{
+  font-family:var(--mono);
+  font-size:7px;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin-top:8px;
+  position:relative;
+  z-index:2;
+}
+
+/* PROJECT NODES — floating absolutely in center col */
+.proj-node{
+  position:absolute;
+  width:160px;
+  padding:12px 14px;
+  background:var(--paper);
+  border:1px solid var(--ink);
+  cursor:default;
+  transition:all 0.3s;
+  z-index:6;
+}
+.proj-node:hover{
+  background:var(--ink);
+  color:var(--paper);
+  transform:scale(1.03);
+  z-index:10;
+}
+.proj-node:hover .pn-title,
+.proj-node:hover .pn-desc,
+.proj-node:hover .pn-venue{color:var(--paper);}
+.proj-node:hover .pn-tag{border-color:rgba(255,255,255,0.3);color:rgba(255,255,255,0.6);}
+
+.pn-num{
+  font-family:var(--mono);
+  font-size:7px;
+  letter-spacing:0.18em;
+  color:var(--gold);
+  margin-bottom:5px;
+}
+.proj-node:hover .pn-num{color:var(--gold2);}
+
+.pn-title{
+  font-family:var(--serif);
+  font-size:14px;
+  font-weight:700;
+  line-height:1.1;
+  letter-spacing:-0.02em;
+  color:var(--ink);
+  margin-bottom:5px;
+}
+.pn-desc{
+  font-family:var(--body);
+  font-size:9.5px;
+  line-height:1.65;
+  color:var(--ink2);
+  margin-bottom:7px;
+  font-weight:300;
+}
+.pn-venue{
+  font-family:var(--mono);
+  font-size:7px;
+  letter-spacing:0.1em;
+  color:var(--green);
+  text-transform:uppercase;
+  margin-bottom:5px;
+}
+.pn-tags{display:flex;flex-wrap:wrap;gap:3px;}
+.pn-tag{
+  font-family:var(--mono);
+  font-size:6.5px;
+  letter-spacing:0.1em;
+  padding:1px 5px;
+  border:1px solid var(--ghost);
+  color:rgba(28,28,28,0.5);
+}
+
+/* Floating annotations on map */
+.map-note{
+  position:absolute;
+  font-family:var(--mono);
+  font-size:7px;
+  color:rgba(28,28,28,0.35);
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  pointer-events:none;
+  z-index:4;
+  line-height:1.7;
+}
+.map-note::before{
+  content:'— ';
+}
+
+/* ========================
+   RIGHT COLUMN
+   ======================== */
+.col-right{
+  border-left:2px solid var(--ink);
+  display:flex;
+  flex-direction:column;
+}
+
+.right-block{
+  border-bottom:1px solid var(--ghost);
+  padding:18px 18px 16px;
+  position:relative;
+}
+.right-block:last-child{border-bottom:none;}
+
+/* PUBLICATIONS */
+.pub-entry{
+  padding:10px 0;
+  border-bottom:1px solid var(--ghost2);
+  position:relative;
+}
+.pub-entry:last-child{border-bottom:none;}
+.pub-entry::before{
+  content:'';
+  position:absolute;
+  left:-18px;top:14px;
+  width:4px;height:4px;
+  border-radius:50%;
+  background:var(--green);
+}
+.pub-year{
+  font-family:var(--mono);
+  font-size:7px;
+  color:var(--gold);
+  letter-spacing:0.12em;
+  margin-bottom:3px;
+}
+.pub-title-sm{
+  font-family:var(--serif);
+  font-size:12px;
+  font-weight:400;
+  line-height:1.3;
+  letter-spacing:-0.01em;
+  margin-bottom:3px;
+}
+.pub-venue-sm{
+  font-family:var(--mono);
+  font-size:7px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--green2);
+}
+
+/* INTERESTS */
+.interest-map{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  padding:4px 0;
+}
+.interest-bubble{
+  font-family:var(--body);
+  font-size:10px;
+  padding:4px 10px;
+  border-radius:0;
+  border:1px solid var(--ink);
+  color:var(--ink);
+  cursor:default;
+  transition:all 0.25s;
+  position:relative;
+  font-weight:300;
+  font-style:italic;
+}
+.interest-bubble:hover{
+  background:var(--green);
+  color:var(--paper);
+  border-color:var(--green);
+}
+.interest-bubble.core{
+  background:var(--ink);
+  color:var(--paper);
+  font-style:normal;
+  font-weight:400;
+}
+
+/* THINKING LAYER */
+.thought-zone{
+  padding:16px 18px;
+  border-top:1px dashed var(--ghost);
+  position:relative;
+}
+.thought-item{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  margin-bottom:10px;
+}
+.thought-label{
+  font-family:var(--mono);
+  font-size:7px;
+  letter-spacing:0.15em;
+  text-transform:uppercase;
+  color:var(--rust);
+  white-space:nowrap;
+  padding-top:1px;
+  min-width:60px;
+}
+.thought-text{
+  font-family:var(--body);
+  font-size:10px;
+  line-height:1.6;
+  color:var(--ink2);
+  font-style:italic;
+  font-weight:300;
+}
+
+/* CONTACT ZONE */
+.contact-zone{
+  padding:18px;
+  border-top:2px solid var(--ink);
+  background:var(--ink);
+}
+.cz-label{
+  font-family:var(--mono);
+  font-size:7px;
+  letter-spacing:0.22em;
+  text-transform:uppercase;
+  color:var(--gold2);
+  margin-bottom:12px;
+}
+.cz-line{
+  font-family:var(--mono);
+  font-size:8.5px;
+  letter-spacing:0.06em;
+  color:rgba(243,238,228,0.7);
+  margin-bottom:5px;
+  line-height:1.6;
+}
+.cz-line strong{color:var(--gold2);}
+.cz-line a{color:rgba(243,238,228,0.85);text-decoration:none;}
+.cz-line a:hover{color:var(--gold2);}
+
+/* ========================
+   FOOTER STRIP
+   ======================== */
+.footer-strip{
+  display:flex;
+  align-items:center;
+  border-top:2px solid var(--ink);
+  background:var(--paper2);
+}
+.fs-cell{
+  flex:1;
+  padding:9px 20px;
+  border-right:1px solid var(--ghost);
+  font-family:var(--mono);
+  font-size:7.5px;
+  letter-spacing:0.16em;
+  text-transform:uppercase;
+  color:rgba(28,28,28,0.45);
+}
+.fs-cell:last-child{border-right:none;}
+.fs-cell strong{color:var(--ink);}
+
+/* ========================
+   SVG CONNECTORS
+   ======================== */
+.connector-svg{
+  position:absolute;
+  inset:0;
+  width:100%;height:100%;
+  pointer-events:none;
+  z-index:3;
+  overflow:visible;
+}
+
+/* ========================
+   SECTION DIVIDERS (horizontal lines inside cols)
+   ======================== */
+.h-rule{
+  width:100%;
+  height:1px;
+  background:var(--ghost);
+  margin:0;
+}
+
+/* ========================
+   HOVER FADE-IN
+   ======================== */
+.fade-in{
+  opacity:0;
+  transform:translateY(12px);
+  transition:opacity 0.7s ease,transform 0.7s ease;
+}
+.fade-in.visible{
+  opacity:1;
+  transform:translateY(0);
+}
+
+/* ========================
+   RESPONSIVE
+   ======================== */
+@media(max-width:1000px){
+  .canvas-body{
+    grid-template-columns:1fr;
+    grid-template-rows:auto auto auto;
+  }
+  .col-left,.col-right{border:none;border-bottom:2px solid var(--ink);}
+  .col-center{min-height:640px;}
+}
+
+/* PULSE on nodes */
+@keyframes pulse-ring{
+  0%{transform:translate(-50%,-50%) scale(1);opacity:0.6;}
+  100%{transform:translate(-50%,-50%) scale(1.08);opacity:0;}
+}
+
+.node-dot{
+  position:absolute;
+  width:8px;height:8px;
+  border-radius:50%;
+  background:var(--green);
+  z-index:7;
+}
+.node-dot::after{
+  content:'';
+  position:absolute;
+  inset:-4px;
+  border-radius:50%;
+  border:1px solid var(--green);
+  animation:pulse-ring 2.5s ease-out infinite;
+}
+
+/* PROCESS ARROW LABELS */
+.arr-label{
+  position:absolute;
+  font-family:var(--mono);
+  font-size:7px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--rust);
+  z-index:4;
+  pointer-events:none;
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.arr-label::before{
+  content:'►';
+  font-size:5px;
+}
+
+/* CROSSHAIR on center */
+.crosshair{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  z-index:2;
+}
+
+</style>
+</head>
+<body>
+<div class="board">
+
+  <!-- ===== HEADER BAND ===== -->
+  <header class="header-band">
+    <div class="hb-title">
+      <div class="hb-name">VIK<em>RANT</em><br>VIK<em>RAM</em></div>
+    </div>
+    <div class="hb-meta">
+      <div class="hb-meta-top">
+        <strong>RESEARCH DOMAIN</strong> &nbsp;Security &amp; AI · Multimodal ML · Malware Analysis · LLM Security<br>
+        <strong>STATUS</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;PhD Applicant — 2026 Cycle<br>
+        <strong>PUBLICATIONS</strong> &nbsp;4 accepted papers · ICASSP, AsiaCCS, ICME, AACL<br>
+        <strong>NODE</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;28.6139°N 77.2090°E
+      </div>
+    </div>
+    <div class="hb-desc">
+      <p>A researcher working at the boundary of security and machine learning — designing systems that remain robust under adversarial conditions, domain shift, and real-world noise. Projects span malware classification, acoustic side-channel extraction, code attribution, and deception detection.</p>
+    </div>
+    <div class="hb-index">
+      <span>BOARD / 2025</span>
+      <span>TLP : WHITE</span>
+      <span>REV / 2.1</span>
+      <span>SEC+AI/001</span>
+    </div>
+  </header>
+
+  <!-- ===== MAIN CANVAS BODY ===== -->
+  <div class="canvas-body">
+
+    <!-- LEFT COLUMN -->
+    <aside class="col-left">
+
+      <!-- EDUCATION -->
+      <div class="left-block fade-in">
+        <div class="block-label">01 / Education</div>
+        <div class="edu-timeline">
+          <div class="edu-item">
+            <div class="edu-deg">B.Tech.<br>Computer Science</div>
+            <div class="edu-inst">Engineering Institution</div>
+            <div class="edu-year">2020 — 2024</div>
+          </div>
+          <div class="edu-item">
+            <div class="edu-deg">Relevant<br>Coursework</div>
+            <div class="course-grid" style="margin-top:6px;">
+              <div class="course-item accent">Machine Learning</div>
+              <div class="course-item">Deep Learning</div>
+              <div class="course-item accent">System Security</div>
+              <div class="course-item">Cryptography</div>
+              <div class="course-item">NLP</div>
+              <div class="course-item accent">Data Structures</div>
+              <div class="course-item">Algorithms</div>
+              <div class="course-item">OS Design</div>
+            </div>
+          </div>
+        </div>
+        <div class="annotation" style="margin-top:12px;">
+          — foundational layer<br>
+          — systems + theory + ml
+        </div>
+      </div>
+
+      <!-- SKILLS -->
+      <div class="left-block fade-in">
+        <div class="block-label">02 / Skills Cluster</div>
+        <div class="skills-cluster">
+          <div class="skill-group">
+            <div class="skill-group-label">Machine Learning</div>
+            <div class="skill-tags">
+              <span class="stag hi">PyTorch</span>
+              <span class="stag hi">Transformers</span>
+              <span class="stag">HuggingFace</span>
+              <span class="stag">scikit-learn</span>
+              <span class="stag">hyperbolic geom.</span>
+              <span class="stag">multimodal</span>
+            </div>
+          </div>
+          <div class="skill-group">
+            <div class="skill-group-label">Security</div>
+            <div class="skill-tags">
+              <span class="stag hi">Malware analysis</span>
+              <span class="stag">side-channel</span>
+              <span class="stag">adversarial ML</span>
+              <span class="stag">binary analysis</span>
+            </div>
+          </div>
+          <div class="skill-group">
+            <div class="skill-group-label">Programming</div>
+            <div class="skill-tags">
+              <span class="stag hi">Python</span>
+              <span class="stag">C/C++</span>
+              <span class="stag">Bash</span>
+              <span class="stag">Java</span>
+              <span class="stag">Javascript</span>
+            </div>
+          </div>
+          <div class="skill-group">
+            <div class="skill-group-label">Systems</div>
+            <div class="skill-tags">
+              <span class="stag">Linux</span>
+              <span class="stag">Docker</span>
+              <span class="stag">distributed training</span>
+              <span class="stag">SLURM</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- THINKING LAYER -->
+      <div class="left-block fade-in" style="flex:1;">
+        <div class="block-label">03 / Process Layer</div>
+        <div class="thought-zone" style="padding:0;">
+          <div class="thought-item">
+            <span class="thought-label">problem</span>
+            <span class="thought-text">How do models generalize across heterogeneous sources with minimal supervision?</span>
+          </div>
+          <div class="thought-item">
+            <span class="thought-label">approach</span>
+            <span class="thought-text">Hyperbolic embedding spaces for hierarchical security taxonomies. PU learning for unlabeled threat signals.</span>
+          </div>
+          <div class="thought-item">
+            <span class="thought-label">limitation</span>
+            <span class="thought-text">Domain shift remains unsolved at scale. Cross-device acoustic variance degrades generalization.</span>
+          </div>
+          <div class="thought-item">
+            <span class="thought-label">future</span>
+            <span class="thought-text">Foundation models for security signals. Causal reasoning over behavioral traces.</span>
+          </div>
+          <div class="thought-item">
+            <span class="thought-label">open q.</span>
+            <span class="thought-text">Can LLM code attribution survive adversarial obfuscation at inference time?</span>
+          </div>
+        </div>
+        <div class="annotation" style="margin-top:14px;border-top:1px dashed var(--ghost);padding-top:10px;">
+          — representation learning<br>
+          — noise robustness<br>
+          — domain invariance<br>
+          — real-world constraints
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- CENTER COLUMN — SYSTEM MAP -->
+    <main class="col-center" style="min-height:700px;position:relative;">
+
+      <!-- SVG connectors & rings drawn behind nodes -->
+      <svg class="connector-svg" id="conn-svg" viewBox="0 0 700 700" preserveAspectRatio="xMidYMid meet">
+
+        <!-- Background grid accent lines -->
+        <line x1="350" y1="0" x2="350" y2="700" stroke="rgba(28,28,28,0.04)" stroke-width="1"/>
+        <line x1="0" y1="350" x2="700" y2="350" stroke="rgba(28,28,28,0.04)" stroke-width="1"/>
+
+        <!-- Outer decorative ring -->
+        <circle cx="350" cy="350" r="280" fill="none" stroke="rgba(28,28,28,0.06)" stroke-width="1" stroke-dasharray="4,8"/>
+        <!-- Mid ring -->
+        <circle cx="350" cy="350" r="200" fill="none" stroke="rgba(61,107,79,0.12)" stroke-width="1" stroke-dasharray="2,6"/>
+        <!-- Inner ring -->
+        <circle cx="350" cy="350" r="130" fill="none" stroke="rgba(61,107,79,0.18)" stroke-width="1"/>
+        <!-- Core ring -->
+        <circle cx="350" cy="350" r="85" fill="rgba(243,238,228,0.9)" stroke="rgba(28,28,28,0.25)" stroke-width="1.5"/>
+        <!-- Core fill -->
+        <circle cx="350" cy="350" r="80" fill="var(--paper)" stroke="none"/>
+
+        <!-- Radial tick marks -->
+        <g stroke="rgba(28,28,28,0.15)" stroke-width="0.8">
+          <line x1="350" y1="70" x2="350" y2="85"/>
+          <line x1="350" y1="615" x2="350" y2="630"/>
+          <line x1="70" y1="350" x2="85" y2="350"/>
+          <line x1="615" y1="350" x2="630" y2="350"/>
+          <line x1="153" y1="153" x2="164" y2="164"/>
+          <line x1="536" y1="164" x2="547" y2="153"/>
+          <line x1="164" y1="536" x2="153" y2="547"/>
+          <line x1="536" y1="536" x2="547" y2="547"/>
+        </g>
+
+        <!-- CONNECTOR: center → FOCA (top-left) -->
+        <line x1="285" y1="295" x2="180" y2="185" stroke="rgba(61,107,79,0.4)" stroke-width="1" stroke-dasharray="3,5"/>
+        <circle cx="180" cy="185" r="3" fill="var(--green)" opacity="0.6"/>
+
+        <!-- CONNECTOR: center → DECKER (top-right) -->
+        <line x1="415" y1="295" x2="530" y2="185" stroke="rgba(61,107,79,0.4)" stroke-width="1" stroke-dasharray="3,5"/>
+        <circle cx="530" cy="185" r="3" fill="var(--green)" opacity="0.6"/>
+
+        <!-- CONNECTOR: center → GoCoMA (bottom-left) -->
+        <line x1="285" y1="410" x2="175" y2="510" stroke="rgba(61,107,79,0.4)" stroke-width="1" stroke-dasharray="3,5"/>
+        <circle cx="175" cy="510" r="3" fill="var(--green)" opacity="0.6"/>
+
+        <!-- CONNECTOR: center → CORAL (bottom-right) -->
+        <line x1="415" y1="410" x2="535" y2="510" stroke="rgba(61,107,79,0.4)" stroke-width="1" stroke-dasharray="3,5"/>
+        <circle cx="535" cy="510" r="3" fill="var(--green)" opacity="0.6"/>
+
+        <!-- Cross connector FOCA - DECKER (shared multimodal) -->
+        <path d="M 210,165 Q 350,120 490,165" fill="none" stroke="rgba(138,112,64,0.22)" stroke-width="0.8" stroke-dasharray="2,4"/>
+
+        <!-- Cross connector GoCoMA - CORAL (shared NLP/code) -->
+        <path d="M 210,525 Q 350,580 490,525" fill="none" stroke="rgba(138,112,64,0.22)" stroke-width="0.8" stroke-dasharray="2,4"/>
+
+        <!-- Cross connector FOCA - GoCoMA (hyperbolic) -->
+        <path d="M 155,210 Q 100,350 155,490" fill="none" stroke="rgba(122,61,40,0.18)" stroke-width="0.8" stroke-dasharray="1,4"/>
+
+        <!-- Annotation label arcs -->
+        <text x="330" y="60" font-family="'Space Mono',monospace" font-size="7" fill="rgba(28,28,28,0.3)" letter-spacing="2" text-anchor="middle">RESEARCH SYSTEM / 2024–2026</text>
+
+        <!-- Degree markers on inner ring -->
+        <text x="350" y="223" font-family="'Space Mono',monospace" font-size="6.5" fill="rgba(61,107,79,0.5)" letter-spacing="1" text-anchor="middle">ML · SECURITY</text>
+        <text x="477" y="355" font-family="'Space Mono',monospace" font-size="6.5" fill="rgba(61,107,79,0.5)" letter-spacing="1" text-anchor="start">AUDIO</text>
+        <text x="223" y="355" font-family="'Space Mono',monospace" font-size="6.5" fill="rgba(61,107,79,0.5)" letter-spacing="1" text-anchor="end">NLP</text>
+        <text x="350" y="490" font-family="'Space Mono',monospace" font-size="6.5" fill="rgba(61,107,79,0.5)" letter-spacing="1" text-anchor="middle">CODE · DECEPTION</text>
+
+        <!-- Small cardinal marks -->
+        <text x="350" y="348" font-family="'Cormorant Garamond',serif" font-size="9" fill="rgba(28,28,28,0.15)" text-anchor="middle">✦</text>
+      </svg>
+
+      <!-- CENTRAL IDENTITY -->
+      <div class="identity-zone" style="width:160px;margin-left:-80px;margin-top:-60px;">
+        <div class="id-name">VIK<em>RANT</em><br>VIK<em>RAM</em></div>
+        <div class="id-role">Security &amp; AI<br>Researcher</div>
+      </div>
+
+      <!-- PROJECT NODES — absolutely placed -->
+
+      <!-- FOCA — top-left -->
+      <div class="proj-node fade-in" style="top:8%;left:3%;">
+        <div class="pn-num">NODE / 001</div>
+        <div class="pn-title">FOCA</div>
+        <div class="pn-venue">ICASSP 2026</div>
+        <div class="pn-desc">Hyperbolic cross-attention for multimodal malware classification across heterogeneous execution environments.</div>
+        <div class="pn-tags">
+          <span class="pn-tag">multimodal</span>
+          <span class="pn-tag">hyperbolic</span>
+          <span class="pn-tag">malware</span>
+        </div>
+      </div>
+
+      <!-- DECKER — top-right -->
+      <div class="proj-node fade-in" style="top:8%;right:3%;">
+        <div class="pn-num">NODE / 002</div>
+        <div class="pn-title">DECKER</div>
+        <div class="pn-venue">AsiaCCS 2026</div>
+        <div class="pn-desc">Domain-invariant embeddings for cross-device acoustic keystroke recognition — side-channel via audio.</div>
+        <div class="pn-tags">
+          <span class="pn-tag">audio ML</span>
+          <span class="pn-tag">domain shift</span>
+          <span class="pn-tag">security</span>
+        </div>
+      </div>
+
+      <!-- GoCoMA — bottom-left -->
+      <div class="proj-node fade-in" style="bottom:10%;left:3%;">
+        <div class="pn-num">NODE / 003</div>
+        <div class="pn-title">GoCoMA</div>
+        <div class="pn-venue">ICME 2026</div>
+        <div class="pn-desc">Hyperbolic multimodal fusion for attribution of LLM-generated code across authorship styles.</div>
+        <div class="pn-tags">
+          <span class="pn-tag">LLMs</span>
+          <span class="pn-tag">code intel</span>
+          <span class="pn-tag">attribution</span>
+        </div>
+      </div>
+
+      <!-- CORAL — bottom-right -->
+      <div class="proj-node fade-in" style="bottom:10%;right:3%;">
+        <div class="pn-num">NODE / 004</div>
+        <div class="pn-title">CORAL</div>
+        <div class="pn-venue">AACL 2025</div>
+        <div class="pn-desc">Socially-aware deception detection using positive–unlabeled learning over conversational structure.</div>
+        <div class="pn-tags">
+          <span class="pn-tag">NLP</span>
+          <span class="pn-tag">PU learning</span>
+          <span class="pn-tag">deception</span>
+        </div>
+      </div>
+
+      <!-- Floating micro-annotations -->
+      <div class="map-note" style="top:42%;left:2%;transform:rotate(-90deg);transform-origin:left center;">behavioral signals</div>
+      <div class="map-note" style="top:52%;right:2%;">noise robustness</div>
+      <div class="map-note" style="top:32%;left:38%;">representation</div>
+      <div class="map-note" style="bottom:20%;left:38%;">domain shift</div>
+
+      <!-- Arrow labels -->
+      <div class="arr-label" style="top:28%;left:28%;">shared: hyperbolic</div>
+      <div class="arr-label" style="top:62%;right:20%;">shared: unsupervised</div>
+
+    </main>
+
+    <!-- RIGHT COLUMN -->
+    <aside class="col-right">
+
+      <!-- PUBLICATIONS INDEX -->
+      <div class="right-block fade-in">
+        <div class="block-label">04 / Publication Index</div>
+        <div style="padding-left:18px;">
+          <div class="pub-entry">
+            <div class="pub-year">2026</div>
+            <div class="pub-title-sm">FOCA: Multimodal Malware Classification via Hyperbolic Cross-Attention</div>
+            <div class="pub-venue-sm">ICASSP 2026</div>
+          </div>
+          <div class="pub-entry">
+            <div class="pub-year">2026</div>
+            <div class="pub-title-sm">DECKER: Domain-invariant Embedding for Cross-Keyboard Extraction</div>
+            <div class="pub-venue-sm">AsiaCCS 2026</div>
+          </div>
+          <div class="pub-entry">
+            <div class="pub-year">2026</div>
+            <div class="pub-title-sm">GoCoMA: Hyperbolic Multimodal Representation Fusion for Code Attribution</div>
+            <div class="pub-venue-sm">ICME 2026</div>
+          </div>
+          <div class="pub-entry">
+            <div class="pub-year">2025</div>
+            <div class="pub-title-sm">CORAL: Socially-Aware Deception Detection</div>
+            <div class="pub-venue-sm">AACL-IJCNLP 2025 (Workshop)</div>
+          </div>
+        </div>
+        <div class="annotation" style="margin-top:10px;">
+          — 4 peer-reviewed papers<br>
+          — top-tier ML &amp; security venues
+        </div>
+      </div>
+
+      <!-- RESEARCH INTERESTS -->
+      <div class="right-block fade-in">
+        <div class="block-label">05 / Research Interests</div>
+        <div class="interest-map">
+            <span class="interest-bubble core">Side-Channel Analysis</span>
+            <span class="interest-bubble core">Malware Analysis</span>
+            <span class="interest-bubble core">LLM Security</span>
+            <span class="interest-bubble core">Security + ML</span>
+            <span class="interest-bubble core">Adversarial ML</span>
+            <span class="interest-bubble core">Multimodal Learning</span>
+            <span class="interest-bubble">Code Intelligence</span>
+            <span class="interest-bubble">Behavioral Signals</span>
+            <span class="interest-bubble">Deception Detection</span>
+            <span class="interest-bubble">Hyperbolic Geometry</span>
+            <span class="interest-bubble">Domain Adaptation</span>
+            <span class="interest-bubble">LLM Robustness</span>
+            <span class="interest-bubble">PU Learning</span>
+        </div>
+      </div>
+
+      <!-- THINKING NOTES -->
+      <div class="right-block fade-in" style="flex:1;">
+        <div class="block-label">06 / Open Questions</div>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div style="border-left:2px solid var(--rust);padding-left:9px;">
+            <div style="font-family:var(--mono);font-size:7px;color:var(--rust);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;">open</div>
+            <div style="font-family:var(--body);font-size:10px;line-height:1.6;font-style:italic;color:var(--ink2);font-weight:300;">Do hierarchical embedding spaces encode semantic security relationships better than Euclidean projections?</div>
+          </div>
+          <div style="border-left:2px solid var(--gold);padding-left:9px;">
+            <div style="font-family:var(--mono);font-size:7px;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;">testing</div>
+            <div style="font-family:var(--body);font-size:10px;line-height:1.6;font-style:italic;color:var(--ink2);font-weight:300;">Can cross-device acoustic models transfer zero-shot to unseen keyboard hardware?</div>
+          </div>
+          <div style="border-left:2px solid var(--green);padding-left:9px;">
+            <div style="font-family:var(--mono);font-size:7px;color:var(--green);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;">future</div>
+            <div style="font-family:var(--body);font-size:10px;line-height:1.6;font-style:italic;color:var(--ink2);font-weight:300;">Foundation models as unified threat representation — a single encoder for malware, network flows, and behavioral traces.</div>
+          </div>
+        </div>
+        <div class="annotation" style="margin-top:14px;border-top:1px dashed var(--ghost);padding-top:10px;">
+          — "not just building things<br>
+          &nbsp;&nbsp;— thinking in systems"
+        </div>
+      </div>
+
+      <!-- CONTACT -->
+      <div class="contact-zone">
+        <div class="cz-label">07 / Initiate Contact</div>
+        <div class="cz-line">$ whois <strong>vikrant-vikram</strong></div>
+        <div class="cz-line">→ <a href="mailto:bikrant.acc.edu@icloud.com">bikrant.acc.edu@icloud.com</a></div>
+        <div class="cz-line">→ <a href="https://linkedin.com/in/vikrant-vikram-a07418185" target="_blank">linkedin / vikrant-vikram</a></div>
+        <div class="cz-line">→ <a href="https://github.com/vikrant-vikram">github / vikrant-vikram</a></div>
+        <div class="cz-line" style="margin-top:6px;color:rgba(243,238,228,0.3);font-size:7px;letter-spacing:0.15em;">TLP:WHITE · 2026 PhD APPLICANT</div>
+      </div>
+
+    </aside>
+
+  </div><!-- /canvas-body -->
+
+  <!-- ===== FOOTER STRIP ===== -->
+  <footer class="footer-strip">
+    <div class="fs-cell"><strong>VIKRANT VIKRAM</strong> — Security &amp; AI Researcher</div>
+    <div class="fs-cell">Research Board / System Map · Rev 2.1</div>
+    <div class="fs-cell">Pub: ICASSP · AsiaCCS · ICME · AACL</div>
+    <div class="fs-cell">Focus: Side-Channel · Malware Analysis · LLM Security · Multimodal</div>
+    <div class="fs-cell">© 2025 · TLP:WHITE</div>
+  </footer>
+
+</div><!-- /board -->
+
+<script>
+// ---- SCROLL REVEAL ----
+const fadeEls = document.querySelectorAll('.fade-in');
+const io = new IntersectionObserver(entries => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), i * 80);
+    }
+  });
+}, { threshold: 0.08 });
+fadeEls.forEach(el => io.observe(el));
+
+// ---- CONNECTOR SVG SCALES TO ACTUAL CONTAINER ----
+// The SVG uses a fixed viewBox (700x700) and the CSS
+// handles stretching via preserveAspectRatio.
+
+// ---- HOVER HIGHLIGHT on proj nodes ----
+document.querySelectorAll('.proj-node').forEach(node => {
+  node.addEventListener('mouseenter', () => {
+    document.querySelectorAll('.proj-node').forEach(n => {
+      if (n !== node) n.style.opacity = '0.45';
+    });
+  });
+  node.addEventListener('mouseleave', () => {
+    document.querySelectorAll('.proj-node').forEach(n => n.style.opacity = '1');
+  });
+});
+
+// ---- MAP NOTE subtle fade ----
+document.querySelectorAll('.map-note, .arr-label').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transition = 'opacity 1s ease';
+  setTimeout(() => el.style.opacity = '1', 800 + Math.random()*600);
+});
+
+// ---- INTEREST BUBBLE random stagger ----
+document.querySelectorAll('.interest-bubble').forEach((b, i) => {
+  b.style.opacity = '0';
+  b.style.transform = 'translateY(6px)';
+  b.style.transition = `opacity 0.5s ease ${i*60}ms, transform 0.5s ease ${i*60}ms, background 0.25s, color 0.25s, border-color 0.25s`;
+  setTimeout(() => { b.style.opacity='1'; b.style.transform='translateY(0)'; }, 400 + i*60);
+});
+</script>
+</body>
+</html>
