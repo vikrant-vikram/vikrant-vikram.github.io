@@ -4,1145 +4,1028 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VIKRANT VIKRAM — Research System</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,700&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,200;0,300;0,400;1,300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;0,700;1,400;1,700&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,200;0,300;0,400;1,300&display=swap" rel="stylesheet">
 <style>
-/* ─────────────────────────────────────────────
-   TOKENS
-───────────────────────────────────────────── */
+/* ─── TOKENS ─────────────────────────────── */
 :root{
-  --paper:#F2EDE3;
-  --ink:#1A1A1A;
-  --ink-mid:rgba(26,26,26,0.55);
-  --ink-ghost:rgba(26,26,26,0.1);
-  --green:#3B6B50;
-  --green-dim:rgba(59,107,80,0.25);
-  --gold:#8A7040;
-  --gold-dim:rgba(138,112,64,0.4);
+  --paper:#F2EDE3; --paper2:#E8E0D2; --ink:#1A1A1A;
+  --ink-mid:rgba(26,26,26,.55); --ghost:rgba(26,26,26,.1); --ghost2:rgba(26,26,26,.05);
+  --green:#3B6B50; --green-lo:rgba(59,107,80,.2);
+  --gold:#8A7040; --gold-lo:rgba(138,112,64,.35);
   --rust:#7A3D28;
   --serif:'Cormorant Garamond',Georgia,serif;
   --mono:'Space Mono',monospace;
   --body:'Crimson Pro',serif;
 }
-
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:14px}
-
-/* ─────────────────────────────────────────────
-   SCROLL CONTAINER  — full scroll height = scenes
-───────────────────────────────────────────── */
 body{
-  margin:0;
-  background:#111;
-  color:var(--ink);
+  background:#0E0E0E; color:var(--ink);
   font-family:var(--body);
-  overflow-x:hidden;
-  /* Total scroll = 9 scenes × viewport height */
-  height:900vh;
-  cursor:crosshair;
+  height:1100vh;          /* 11 scenes × 100vh scroll space */
+  overflow-x:hidden; cursor:crosshair;
 }
 
-/* ─────────────────────────────────────────────
-   STICKY STAGE — everything renders here
-───────────────────────────────────────────── */
-#stage{
-  position:fixed;
-  inset:0;
-  width:100vw;
-  height:100vh;
-  overflow:hidden;
-}
+/* ─── FIXED STAGE ────────────────────────── */
+#stage{position:fixed;inset:0;width:100vw;height:100vh;overflow:hidden;}
 
-/* ─────────────────────────────────────────────
-   GRAIN OVERLAY
-───────────────────────────────────────────── */
+/* ─── GRAIN ──────────────────────────────── */
 #grain{
-  position:absolute;inset:0;
-  pointer-events:none;z-index:9000;
-  opacity:0.55;
+  position:absolute;inset:0;pointer-events:none;z-index:9000;opacity:.5;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E");
-  background-size:220px;
-  mix-blend-mode:multiply;
+  background-size:220px; mix-blend-mode:multiply;
 }
 
-/* ─────────────────────────────────────────────
-   GRID LAYER (paper grid)
-───────────────────────────────────────────── */
+/* ─── GRID ───────────────────────────────── */
 #grid{
-  position:absolute;inset:0;
-  pointer-events:none;z-index:1;
+  position:absolute;inset:0;pointer-events:none;z-index:1;opacity:0;
   background-image:
-    linear-gradient(rgba(26,26,26,0.07) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(26,26,26,0.07) 1px,transparent 1px);
+    linear-gradient(rgba(26,26,26,.07) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(26,26,26,.07) 1px,transparent 1px);
   background-size:52px 52px;
-  opacity:0;
   transition:opacity 1.2s ease;
 }
-
-/* ─────────────────────────────────────────────
-   BACKGROUND PAPER WASH
-───────────────────────────────────────────── */
+/* ─── BG PAPER ───────────────────────────── */
 #bg{
-  position:absolute;inset:0;
-  background:radial-gradient(ellipse at 50% 45%, #F2EDE3 0%, #E8E0D2 60%, #DDD3C0 100%);
-  opacity:0;
+  position:absolute;inset:0;z-index:0;opacity:0;
+  background:radial-gradient(ellipse at 50% 45%,#F2EDE3 0%,#E8E0D2 60%,#DDD3C0 100%);
   transition:opacity 1.4s ease;
-  z-index:0;
 }
 
-/* ─────────────────────────────────────────────
-   SCENE LAYERS  (z-stacked, all absolute)
-───────────────────────────────────────────── */
-.scene{
+/* ─── UI CHROME ──────────────────────────── */
+#progress-bar{position:fixed;top:0;left:0;height:2px;background:var(--green);z-index:9500;width:0%;transition:width .08s linear;}
+#hud{
+  position:fixed;bottom:28px;right:32px;z-index:9400;
+  font-family:var(--mono);font-size:7.5px;letter-spacing:.2em;text-transform:uppercase;
+  text-align:right;line-height:2;
+  color:rgba(255,255,255,.18);
+  transition:color .4s;
+}
+#hud.light{color:rgba(26,26,26,.28);}
+#hud .hud-scene{font-size:9px;}
+#scroll-hint{
+  position:fixed;bottom:32px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  font-family:var(--mono);font-size:7px;letter-spacing:.22em;text-transform:uppercase;
+  color:rgba(255,255,255,.18);z-index:9400;
+  transition:opacity .6s ease;
+}
+#scroll-hint .sh-line{width:1px;height:28px;background:linear-gradient(to bottom,rgba(255,255,255,.3),transparent);animation:shp 2s ease-in-out infinite;}
+@keyframes shp{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* ══════════════════════════════════════════
+   SCENE LAYERS
+══════════════════════════════════════════ */
+/* Generic transition for all layers */
+.layer{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .6s ease;}
+.layer.vis{opacity:1;pointer-events:auto;}
+
+/* ─── S0 VOID ────────────────────────────── */
+#s-void{z-index:50;background:#0E0E0E;}
+#s-void .gf{
   position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  opacity:0;
-  pointer-events:none;
-  transition:opacity 0.7s ease;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='0.07'/%3E%3C/svg%3E");
+  background-size:200px;animation:gsh .15s steps(1) infinite;
 }
-.scene.active{pointer-events:auto;}
+@keyframes gsh{0%{background-position:0 0}25%{background-position:40px -20px}50%{background-position:-20px 30px}75%{background-position:20px 10px}}
+#s-void .lbl{position:absolute;bottom:44px;left:48px;font-family:var(--mono);font-size:8px;letter-spacing:.22em;color:rgba(255,255,255,.1);text-transform:uppercase;}
 
-/* ══ SCENE 0 — VOID ══ */
-#s0{z-index:10;background:#0E0E0E;}
-#s0 .grain-flicker{
-  position:absolute;inset:0;
-  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23g)' opacity='0.08'/%3E%3C/svg%3E");
-  background-size:200px;
-  animation:grainShift 0.12s steps(1) infinite;
+/* ─── S1 TERMINAL ────────────────────────── */
+#s-boot{z-index:49;background:#0E0E0E;display:flex;flex-direction:column;justify-content:center;padding:0 10vw;}
+.tl{
+  font-family:var(--mono);font-size:clamp(11px,1.3vw,14px);color:#4ADE80;
+  line-height:2.4;letter-spacing:.06em;
+  opacity:0;transform:translateY(5px);
+  transition:opacity .45s ease,transform .45s ease;
 }
-@keyframes grainShift{
-  0%{background-position:0 0}25%{background-position:40px -20px}
-  50%{background-position:-20px 30px}75%{background-position:20px 10px}
-}
-#s0 .boot-label{
-  font-family:var(--mono);
-  font-size:9px;
-  letter-spacing:0.22em;
-  color:rgba(255,255,255,0.12);
-  text-transform:uppercase;
-  position:absolute;
-  bottom:48px;left:52px;
-}
+.tl.on{opacity:1;transform:translateY(0);}
+.tl .p{color:rgba(74,222,128,.4);margin-right:8px;}
+.tl .d{color:rgba(74,222,128,.35);}
+.tl .hl{color:#C4A96A;}
+.cur{display:inline-block;width:8px;height:13px;background:#4ADE80;vertical-align:middle;animation:bl 1s step-end infinite;}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:0}}
 
-/* ══ SCENE 1 — TERMINAL BOOT ══ */
-#s1{z-index:9;background:#0E0E0E;flex-direction:column;align-items:flex-start;padding:0 10vw;}
-.term-line{
-  font-family:var(--mono);
-  font-size:clamp(11px,1.2vw,14px);
-  color:#4ADE80;
-  line-height:2.2;
-  letter-spacing:0.06em;
-  opacity:0;
-  transform:translateY(4px);
-  transition:opacity 0.4s ease, transform 0.4s ease;
-  white-space:nowrap;
-}
-.term-line .prompt{color:rgba(74,222,128,0.45);margin-right:8px;}
-.term-line .dim{color:rgba(74,222,128,0.35);}
-.term-cursor{
-  display:inline-block;width:8px;height:13px;
-  background:#4ADE80;vertical-align:middle;
-  animation:blink 1s step-end infinite;
-}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-
-/* ══ SCENE 2 — IDENTITY ══ */
-#s2{z-index:8;flex-direction:column;gap:0;}
-.id-rings-wrap{
-  position:absolute;
-  top:50%;left:50%;
-  transform:translate(-50%,-50%) scale(0.3);
-  opacity:0;
-  transition:transform 1.4s cubic-bezier(0.16,1,0.3,1), opacity 1.2s ease;
-  pointer-events:none;
-}
-.id-rings-wrap.show{transform:translate(-50%,-50%) scale(1);opacity:1;}
-.id-name-wrap{
+/* ─── S2 IDENTITY ────────────────────────── */
+#s-id{z-index:48;display:flex;align-items:center;justify-content:center;}
+.id-rings{
   position:absolute;top:50%;left:50%;
-  transform:translate(-50%,-50%);
-  text-align:center;
-  filter:blur(12px);
-  opacity:0;
-  transition:filter 1.6s ease, opacity 1.2s ease;
-  z-index:3;
+  transform:translate(-50%,-50%) scale(.3);opacity:0;
+  transition:transform 1.4s cubic-bezier(.16,1,.3,1),opacity 1.2s ease;
 }
-.id-name-wrap.show{filter:blur(0);opacity:1;}
+.id-rings.on{transform:translate(-50%,-50%) scale(1);opacity:1;}
 .id-name{
-  font-family:var(--serif);
-  font-size:clamp(60px,9vw,130px);
-  font-weight:700;
-  line-height:0.88;
-  letter-spacing:-0.04em;
-  color:var(--ink);
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;filter:blur(14px);opacity:0;z-index:3;
+  transition:filter 1.6s ease,opacity 1.2s ease;
 }
-.id-name em{font-style:italic;color:var(--green);}
-.id-sub{
-  font-family:var(--mono);
-  font-size:9px;
-  letter-spacing:0.3em;
-  text-transform:uppercase;
-  color:var(--gold);
-  margin-top:16px;
-  opacity:0;
-  transform:translateY(8px);
-  transition:opacity 0.8s ease 0.5s, transform 0.8s ease 0.5s;
-}
-.id-sub.show{opacity:1;transform:translateY(0);}
-/* Orbital labels */
-.orbit-label{
-  position:absolute;
-  font-family:var(--mono);
-  font-size:8px;
-  letter-spacing:0.18em;
-  text-transform:uppercase;
-  color:var(--green);
-  opacity:0;
-  transition:opacity 0.8s ease;
-  white-space:nowrap;
-}
-.orbit-label.show{opacity:1;}
+.id-name.on{filter:blur(0);opacity:1;}
+.id-name h1{font-family:var(--serif);font-size:clamp(58px,9vw,130px);font-weight:700;line-height:.88;letter-spacing:-.04em;}
+.id-name h1 em{font-style:italic;color:var(--green);}
+.id-name .sub{font-family:var(--mono);font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-top:14px;opacity:0;transition:opacity .8s ease .5s;}
+.id-name .sub.on{opacity:1;}
+.orbit{position:absolute;font-family:var(--mono);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--green);opacity:0;white-space:nowrap;transition:opacity .8s ease;pointer-events:none;}
+.orbit.on{opacity:1;}
 
-/* ══ SCENE 3 — SYSTEM ZOOM ══ */
-#s3{z-index:7;}
-/* zoom happens via transform on the map container */
-
-/* ══ SCENE 4 — NODES MAP ══ */
-#s4{z-index:6;align-items:stretch;}
-
-/* ══ SCENE 5 — FOCUS ══ */
-#s5{z-index:5;}
-
-/* ══ SCENES 6,7,8,9 ══ */
-#s6{z-index:4;}
-#s7{z-index:3;align-items:flex-end;padding-bottom:80px;}
-#s8{z-index:2;padding:60px;}
-#s9{z-index:11;background:#0E0E0E;flex-direction:column;}
-
-/* ─────────────────────────────────────────────
-   SYSTEM MAP CANVAS (used in scenes 3,4,5,6)
-───────────────────────────────────────────── */
+/* ─── MAP CANVAS (scenes 3-8) ────────────── */
 #map-canvas{
-  position:absolute;inset:0;
-  opacity:0;
-  transition:opacity 0.9s ease;
-  transform-origin:center center;
-}
-
-/* SVG connector lines */
-.conn-line{
-  stroke-dasharray:300;
-  stroke-dashoffset:300;
-  transition:stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1);
-}
-.conn-line.drawn{stroke-dashoffset:0;}
-
-/* ─────────────────────────────────────────────
-   PROJECT NODES
-───────────────────────────────────────────── */
-.p-node{
-  position:absolute;
-  width:210px;
-  background:var(--paper);
-  border:1.5px solid var(--ink);
-  padding:16px 16px 14px;
-  opacity:0;
-  transform:translateY(20px);
-  transition:opacity 0.7s ease, transform 0.7s ease,
-              background 0.3s, border-color 0.3s, box-shadow 0.3s;
-  cursor:default;
+  position:absolute;inset:0;opacity:0;
+  transform-origin:center;
+  transition:opacity .9s ease,transform 1.4s cubic-bezier(.16,1,.3,1);
   z-index:5;
 }
-.p-node:hover{
-  background:var(--ink);
-  box-shadow:0 8px 40px rgba(0,0,0,0.25);
-  transform:translateY(-4px) !important;
-  z-index:10;
-}
-.p-node:hover .pn-title,
-.p-node:hover .pn-venue,
-.p-node:hover .pn-desc{color:var(--paper) !important;}
-.p-node:hover .pn-tag{border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.5);}
-.p-node:hover .pn-num{color:var(--gold-dim);}
-.p-node.shown{opacity:1;transform:translateY(0);}
-.p-node.dimmed{opacity:0.15;transform:scale(0.97) !important;}
+#map-canvas.vis{opacity:1;}
+#map-canvas.zoom-in{transform:scale(1.35);}
+#map-canvas.zoom-normal{transform:scale(1);}
+#map-canvas .paper{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 46%,#F2EDE3,#E8E0D2 70%,#DDD3C0);}
 
-.pn-num{font-family:var(--mono);font-size:7px;letter-spacing:0.2em;color:var(--gold);margin-bottom:5px;}
-.pn-title{font-family:var(--serif);font-size:18px;font-weight:700;letter-spacing:-0.02em;line-height:1;margin-bottom:4px;color:var(--ink);}
-.pn-venue{font-family:var(--mono);font-size:7.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--green);margin-bottom:7px;}
-.pn-desc{font-family:var(--body);font-size:10.5px;line-height:1.65;color:rgba(26,26,26,0.68);font-weight:300;margin-bottom:8px;}
-.pn-tags{display:flex;flex-wrap:wrap;gap:4px;}
-.pn-tag{font-family:var(--mono);font-size:6.5px;letter-spacing:0.1em;padding:2px 6px;border:1px solid var(--ink-ghost);color:var(--ink-mid);}
+/* SVG connectors */
+.cline{stroke-dasharray:300;stroke-dashoffset:300;transition:stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1);}
+.cline.on{stroke-dashoffset:0;}
 
-/* Pulse dot on node */
-.pulse-dot{
-  position:absolute;top:-5px;right:-5px;
-  width:8px;height:8px;border-radius:50%;
-  background:var(--green);
+/* Core label */
+#core{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;pointer-events:none;z-index:6;
+  opacity:0;transition:opacity .8s ease;
 }
-.pulse-dot::after{
-  content:'';position:absolute;inset:-4px;border-radius:50%;
-  border:1px solid var(--green);
-  animation:pulse 2.5s ease-out infinite;
-}
-@keyframes pulse{0%{transform:scale(1);opacity:0.7}100%{transform:scale(2.2);opacity:0}}
+#core.on{opacity:1;}
+#core .cn{font-family:var(--serif);font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1;color:var(--ink);}
+#core .cn em{font-style:italic;color:var(--green);}
+#core .cr{font-family:var(--mono);font-size:6.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-top:6px;}
 
-/* ─────────────────────────────────────────────
-   FLOATING MAP ANNOTATIONS
-───────────────────────────────────────────── */
-.map-ann{
-  position:absolute;
-  font-family:var(--mono);
-  font-size:7px;
-  letter-spacing:0.14em;
-  text-transform:uppercase;
-  color:rgba(26,26,26,0.3);
-  opacity:0;
-  transition:opacity 1.2s ease;
-  pointer-events:none;
-  z-index:3;
+/* ─── PROJECT NODES ──────────────────────── */
+.pnode{
+  position:absolute;width:200px;
+  background:var(--paper);border:1.5px solid var(--ink);
+  padding:14px 14px 12px;
+  opacity:0;transform:translateY(18px);
+  transition:opacity .65s ease,transform .65s ease,background .25s,border-color .25s,box-shadow .25s;
+  cursor:default;z-index:6;
 }
-.map-ann.show{opacity:1;}
-.map-ann::before{content:'— ';}
+.pnode.on{opacity:1;transform:translateY(0);}
+.pnode.dim{opacity:.12 !important;transform:scale(.97) !important;}
+.pnode:hover{background:var(--ink);box-shadow:0 8px 36px rgba(0,0,0,.22);transform:translateY(-4px) !important;z-index:10;}
+.pnode:hover .pn-t,.pnode:hover .pn-d,.pnode:hover .pn-v{color:var(--paper);}
+.pnode:hover .pn-tg{border-color:rgba(255,255,255,.18);color:rgba(255,255,255,.45);}
+.pnode:hover .pn-n{color:var(--gold-lo);}
+.pn-n{font-family:var(--mono);font-size:7px;letter-spacing:.2em;color:var(--gold);margin-bottom:4px;}
+.pn-t{font-family:var(--serif);font-size:18px;font-weight:700;letter-spacing:-.02em;line-height:1;margin-bottom:4px;color:var(--ink);}
+.pn-v{font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:7px;}
+.pn-d{font-family:var(--body);font-size:10px;line-height:1.6;color:var(--ink-mid);font-weight:300;margin-bottom:7px;}
+.pn-tags{display:flex;flex-wrap:wrap;gap:3px;}
+.pn-tg{font-family:var(--mono);font-size:6px;letter-spacing:.1em;padding:2px 5px;border:1px solid var(--ghost);color:var(--ink-mid);}
+.pdot{position:absolute;top:-4px;right:-4px;width:7px;height:7px;border-radius:50%;background:var(--green);}
+.pdot::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--green);animation:pls 2.4s ease-out infinite;}
+@keyframes pls{0%{transform:scale(1);opacity:.7}100%{transform:scale(2.4);opacity:0}}
 
-/* ─────────────────────────────────────────────
-   CENTER CORE (in map)
-───────────────────────────────────────────── */
-#core-label{
-  position:absolute;top:50%;left:50%;
-  transform:translate(-50%,-50%);
-  text-align:center;
-  pointer-events:none;
-  z-index:6;
-  opacity:0;
-  transition:opacity 0.8s ease;
+/* Map floating annotations */
+.mann{
+  position:absolute;font-family:var(--mono);font-size:6.5px;
+  letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(26,26,26,.28);opacity:0;pointer-events:none;z-index:3;
+  transition:opacity 1s ease;
 }
-#core-label.show{opacity:1;}
-#core-label .cn{font-family:var(--serif);font-size:22px;font-weight:700;letter-spacing:-0.02em;line-height:1;color:var(--ink);}
-#core-label .cn em{font-style:italic;color:var(--green);}
-#core-label .cr{font-family:var(--mono);font-size:6.5px;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-top:6px;}
+.mann.on{opacity:1;}
+.mann::before{content:'— ';}
 
-/* ─────────────────────────────────────────────
-   FOCUS REVEAL (scene 5) — node detail panel
-───────────────────────────────────────────── */
+/* ─── FOCUS PANEL (S5) ───────────────────── */
 #focus-panel{
-  position:absolute;
-  right:8%;top:50%;
-  transform:translateY(-50%);
-  width:320px;
-  opacity:0;
-  transition:opacity 0.6s ease;
-  z-index:7;
+  position:absolute;right:6%;top:50%;transform:translateY(-50%);
+  width:300px;opacity:0;transition:opacity .5s ease;z-index:8;
 }
-#focus-panel.show{opacity:1;}
-.fp-label{font-family:var(--mono);font-size:7.5px;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;}
-.fp-title{font-family:var(--serif);font-size:clamp(28px,3.5vw,44px);font-weight:700;line-height:0.95;letter-spacing:-0.03em;color:var(--ink);margin-bottom:14px;}
+#focus-panel.on{opacity:1;}
+.fp-lbl{font-family:var(--mono);font-size:7px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
+.fp-title{font-family:var(--serif);font-size:clamp(28px,3.5vw,44px);font-weight:700;line-height:.95;letter-spacing:-.03em;color:var(--ink);margin-bottom:12px;}
 .fp-title em{font-style:italic;color:var(--green);}
 .fp-row{
-  display:flex;gap:12px;align-items:flex-start;
-  margin-bottom:10px;
-  opacity:0;transform:translateX(12px);
-  transition:opacity 0.5s ease,transform 0.5s ease;
+  display:flex;gap:10px;align-items:flex-start;margin-bottom:9px;
+  opacity:0;transform:translateX(10px);
+  transition:opacity .45s ease,transform .45s ease;
 }
-.fp-row.show{opacity:1;transform:translateX(0);}
-.fp-key{font-family:var(--mono);font-size:7px;letter-spacing:0.14em;text-transform:uppercase;color:var(--rust);min-width:68px;padding-top:2px;}
-.fp-val{font-family:var(--body);font-size:11.5px;line-height:1.6;color:var(--ink-mid);font-style:italic;font-weight:300;}
-.fp-divider{width:100%;height:1px;background:var(--ink-ghost);margin:14px 0;}
+.fp-row.on{opacity:1;transform:translateX(0);}
+.fp-key{font-family:var(--mono);font-size:7px;letter-spacing:.12em;text-transform:uppercase;color:var(--rust);min-width:64px;padding-top:2px;}
+.fp-val{font-family:var(--body);font-size:11px;line-height:1.6;color:var(--ink-mid);font-style:italic;font-weight:300;}
+.fp-div{width:100%;height:1px;background:var(--ghost);margin:10px 0;}
 
-/* ─────────────────────────────────────────────
-   SCENE 6 — CONNECTIONS  (shared concept labels)
-───────────────────────────────────────────── */
-.concept-pill{
-  position:absolute;
-  font-family:var(--body);
-  font-size:11px;
-  font-style:italic;
-  padding:4px 14px;
-  border:1px solid var(--ink);
-  background:rgba(242,237,227,0.88);
-  color:var(--ink);
-  opacity:0;
-  transform:scale(0.8);
-  transition:opacity 0.6s ease,transform 0.6s ease;
-  pointer-events:none;
-  z-index:7;
-  backdrop-filter:blur(4px);
+/* ─── CONCEPT PILLS (S6) ─────────────────── */
+.cpill{
+  position:absolute;font-family:var(--body);font-size:11px;font-style:italic;
+  padding:4px 14px;border:1px solid var(--ink);background:rgba(242,237,227,.9);
+  color:var(--ink);opacity:0;transform:scale(.82);
+  transition:opacity .55s ease,transform .55s ease;
+  pointer-events:none;z-index:8;backdrop-filter:blur(3px);
 }
-.concept-pill.show{opacity:1;transform:scale(1);}
+.cpill.on{opacity:1;transform:scale(1);}
 
-/* ─────────────────────────────────────────────
-   SCENE 7 — FOUNDATION  (education / skills)
-───────────────────────────────────────────── */
+/* ─── FOUNDATION (S7) ────────────────────── */
 #foundation{
-  position:absolute;
-  bottom:0;left:0;right:0;
-  height:55vh;
-  background:var(--paper);
-  border-top:2px solid var(--ink);
-  display:grid;
-  grid-template-columns:1fr 1fr 1fr;
-  opacity:0;
-  transform:translateY(40px);
-  transition:opacity 0.9s ease,transform 0.9s ease;
-  overflow:hidden;
-  z-index:4;
+  position:absolute;bottom:0;left:0;right:0;height:58vh;
+  background:var(--paper);border-top:2px solid var(--ink);
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  opacity:0;transform:translateY(50px);
+  transition:opacity .8s ease,transform .8s ease;
+  overflow:hidden;z-index:7;
 }
-#foundation.show{opacity:1;transform:translateY(0);}
-.fd-col{padding:24px 24px 20px;border-right:1px solid var(--ink-ghost);}
+#foundation.on{opacity:1;transform:translateY(0);}
+.fd-col{padding:22px 22px 18px;border-right:1px solid var(--ghost);}
 .fd-col:last-child{border-right:none;}
-.fd-label{font-family:var(--mono);font-size:7px;letter-spacing:0.24em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
-.fd-label::before{content:'';display:block;width:14px;height:1px;background:var(--gold);}
-.fd-h{font-family:var(--serif);font-size:22px;font-weight:700;letter-spacing:-0.02em;margin-bottom:10px;line-height:1.1;}
+.fd-lbl{font-family:var(--mono);font-size:7px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;display:flex;align-items:center;gap:7px;}
+.fd-lbl::before{content:'';display:block;width:12px;height:1px;background:var(--gold);}
+.fd-h{font-family:var(--serif);font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:10px;line-height:1.1;}
 .fd-h em{font-style:italic;color:var(--green);}
 .fd-item{
-  font-family:var(--body);font-size:10.5px;line-height:1.7;
+  font-family:var(--body);font-size:10px;line-height:1.7;
   color:var(--ink-mid);font-weight:300;
-  border-left:2px solid var(--ink-ghost);
-  padding-left:8px;margin-bottom:6px;
-  opacity:0;transform:translateY(8px);
-  transition:opacity 0.5s ease,transform 0.5s ease;
+  border-left:2px solid var(--ghost);padding-left:7px;margin-bottom:5px;
+  opacity:0;transform:translateY(6px);
+  transition:opacity .45s ease,transform .45s ease;
 }
-.fd-item.show{opacity:1;transform:translateY(0);}
-.fd-item.hi{border-left-color:var(--green);color:var(--ink);}
-.skill-wrap{display:flex;flex-wrap:wrap;gap:4px;}
-.sk{font-family:var(--mono);font-size:7px;letter-spacing:0.1em;padding:3px 7px;border:1px solid var(--ink-ghost);color:var(--ink-mid);opacity:0;transition:opacity 0.4s ease,border-color 0.2s,color 0.2s;}
-.sk.show{opacity:1;}
+.fd-item.on{opacity:1;transform:translateY(0);}
+.fd-item.ac{border-left-color:var(--green);color:var(--ink);}
+.sk-wrap{display:flex;flex-wrap:wrap;gap:4px;}
+.sk{
+  font-family:var(--mono);font-size:7px;letter-spacing:.1em;
+  padding:2px 6px;border:1px solid var(--ghost);color:var(--ink-mid);
+  opacity:0;transition:opacity .35s ease,border-color .2s,color .2s;cursor:default;
+}
+.sk.on{opacity:1;}
 .sk:hover{border-color:var(--green);color:var(--green);}
-.sk.core{border-color:var(--gold-dim);color:var(--gold);}
+.sk.core{border-color:var(--gold-lo);color:var(--gold);}
 
-/* ─────────────────────────────────────────────
-   SCENE 8 — THINKING LAYER
-───────────────────────────────────────────── */
-#thinking-layer{
-  position:absolute;inset:0;
-  opacity:0;transition:opacity 0.8s ease;
-  z-index:3;
+/* ─── BLOG (S8) ──────────────────────────── */
+#blog-layer{
+  position:absolute;inset:0;opacity:0;
+  transition:opacity .7s ease;z-index:7;
+  background:var(--paper);
+  display:flex;flex-direction:column;padding:0;overflow:hidden;
+}
+#blog-layer.on{opacity:1;}
+.blog-header{
+  border-bottom:2px solid var(--ink);padding:18px 40px 14px;
+  display:flex;justify-content:space-between;align-items:flex-end;
+  flex-shrink:0;
+}
+.blog-header h2{font-family:var(--serif);font-size:clamp(36px,5vw,64px);font-weight:700;line-height:.9;letter-spacing:-.03em;}
+.blog-header h2 em{font-style:italic;color:var(--green);}
+.blog-header .bh-meta{font-family:var(--mono);font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-mid);text-align:right;line-height:2;}
+.blog-body{display:flex;flex:1;overflow:hidden;}
+.blog-feat{
+  flex:0 0 46%;border-right:2px solid var(--ink);
+  padding:28px 32px;display:flex;flex-direction:column;justify-content:space-between;
+  background:var(--ink);
+  opacity:0;transform:translateX(-20px);
+  transition:opacity .6s ease,transform .6s ease;
+}
+.blog-feat.on{opacity:1;transform:translateX(0);}
+.blog-feat .bf-tag{font-family:var(--mono);font-size:7.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--green);margin-bottom:14px;}
+.blog-feat .bf-title{font-family:var(--serif);font-size:clamp(20px,2.4vw,32px);font-weight:700;line-height:1.1;letter-spacing:-.02em;color:var(--paper);margin-bottom:10px;}
+.blog-feat .bf-ex{font-family:var(--body);font-size:11px;line-height:1.8;color:rgba(242,237,227,.5);font-weight:300;margin-bottom:20px;}
+.blog-feat .bf-read{font-family:var(--mono);font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:gap .2s;}
+.blog-feat .bf-read:hover{gap:14px;}
+.blog-feat .bf-read::after{content:'→';}
+.blog-list{flex:1;display:flex;flex-direction:column;overflow-y:auto;}
+.blog-item{
+  padding:18px 24px;border-bottom:1px solid var(--ghost);
+  border-left:2px solid transparent;
+  opacity:0;transform:translateX(12px);
+  transition:opacity .5s ease,transform .5s ease,border-color .25s,background .25s;
+  cursor:default;flex-shrink:0;
+}
+.blog-item.on{opacity:1;transform:translateX(0);}
+.blog-item:hover{border-left-color:var(--green);background:var(--ghost2);}
+.bi-tag{font-family:var(--mono);font-size:7px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+.bi-title{font-family:var(--serif);font-size:16px;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin-bottom:5px;}
+.bi-ex{font-family:var(--body);font-size:10px;line-height:1.65;color:var(--ink-mid);font-weight:300;}
+
+/* ─── THINKING (S9) ──────────────────────── */
+#think-layer{position:absolute;inset:0;opacity:0;transition:opacity .7s ease;z-index:6;pointer-events:none;}
+#think-layer.on{opacity:1;}
+#think-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+.ta{stroke-dasharray:90;stroke-dashoffset:90;transition:stroke-dashoffset 1s ease;}
+.ta.on{stroke-dashoffset:0;}
+.tnote{
+  position:absolute;
+  font-family:var(--body);font-size:11px;font-style:italic;font-weight:300;
+  line-height:1.65;color:var(--ink-mid);max-width:210px;
+  padding:10px 13px;background:rgba(242,237,227,.88);
+  border-left:2px solid var(--ghost);
+  opacity:0;transition:opacity .7s ease,transform .7s ease;
   pointer-events:none;
 }
-#thinking-layer.show{opacity:1;}
-.thought-note{
-  position:absolute;
-  font-family:var(--body);
-  font-size:11.5px;
-  font-style:italic;
-  font-weight:300;
-  line-height:1.65;
-  color:var(--ink-mid);
-  max-width:220px;
-  opacity:0;
-  transition:opacity 0.8s ease,transform 0.8s ease;
-  padding:10px 14px;
-  background:rgba(242,237,227,0.85);
-  border-left:2px solid var(--ink-ghost);
-}
-.thought-note.show{opacity:1;}
-.thought-key{
-  font-family:var(--mono);
-  font-size:7px;letter-spacing:0.18em;text-transform:uppercase;
-  color:var(--rust);margin-bottom:5px;
-  display:flex;align-items:center;gap:6px;
-}
-.thought-key::before{content:'▶';font-size:5px;}
-/* Animated arrows SVG */
-#think-arrows{position:absolute;inset:0;pointer-events:none;}
-.think-line{stroke-dasharray:80;stroke-dashoffset:80;transition:stroke-dashoffset 1s ease;}
-.think-line.draw{stroke-dashoffset:0;}
+.tnote.on{opacity:1;}
+.tk{font-family:var(--mono);font-size:7px;letter-spacing:.18em;text-transform:uppercase;color:var(--rust);margin-bottom:5px;}
+.tk::before{content:'▶ ';font-size:5px;}
 
-/* ─────────────────────────────────────────────
-   SCENE 9 — TERMINAL EXIT
-───────────────────────────────────────────── */
-#s9{padding:0 10vw;align-items:flex-start;}
-.exit-term{width:100%;max-width:600px;}
-.exit-line{
-  font-family:var(--mono);
-  font-size:clamp(11px,1.2vw,14px);
-  color:#4ADE80;line-height:2.3;
-  letter-spacing:0.06em;
+/* ─── TERMINAL EXIT (S10) ────────────────── */
+#s-exit{z-index:50;background:#0E0E0E;display:flex;flex-direction:column;justify-content:center;padding:0 10vw;}
+.el{
+  font-family:var(--mono);font-size:clamp(11px,1.3vw,14px);color:#4ADE80;
+  line-height:2.4;letter-spacing:.06em;
   opacity:0;transform:translateY(4px);
-  transition:opacity 0.5s ease,transform 0.5s ease;
+  transition:opacity .5s ease,transform .5s ease;
 }
-.exit-line.show{opacity:1;transform:translateY(0);}
-.exit-line .dim{color:rgba(74,222,128,0.3);}
-.exit-line .hi{color:#F2EDE3;}
-.exit-line .gold{color:#C4A96A;}
-.contact-links{
-  margin-top:32px;
-  display:flex;flex-direction:column;gap:10px;
-  opacity:0;transition:opacity 0.8s ease 0.5s;
-}
-.contact-links.show{opacity:1;}
-.cl-row{display:flex;align-items:baseline;gap:16px;}
-.cl-key{font-family:var(--mono);font-size:8px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(74,222,128,0.4);min-width:70px;}
-.cl-val{font-family:var(--mono);font-size:12px;color:rgba(242,237,227,0.8);text-decoration:none;letter-spacing:0.04em;transition:color 0.2s;}
-.cl-val:hover{color:#4ADE80;}
-
-/* ─────────────────────────────────────────────
-   PROGRESS INDICATOR
-───────────────────────────────────────────── */
-#progress-bar{
-  position:fixed;top:0;left:0;height:2px;
-  background:var(--green);z-index:9500;
-  width:0%;transition:width 0.1s linear;
-}
-#scene-counter{
-  position:fixed;bottom:32px;right:36px;
-  font-family:var(--mono);font-size:8px;letter-spacing:0.22em;
-  text-transform:uppercase;color:rgba(255,255,255,0.2);
-  z-index:9400;
-  transition:color 0.4s;
-}
-#scene-counter.light{color:rgba(26,26,26,0.3);}
-
-/* ─────────────────────────────────────────────
-   SCROLL HINT
-───────────────────────────────────────────── */
-#scroll-hint{
-  position:fixed;bottom:36px;left:50%;transform:translateX(-50%);
-  display:flex;flex-direction:column;align-items:center;gap:8px;
-  font-family:var(--mono);font-size:7.5px;letter-spacing:0.22em;
-  text-transform:uppercase;color:rgba(255,255,255,0.2);
-  z-index:9400;
-  transition:opacity 0.6s ease;
-}
-#scroll-hint .sh-line{width:1px;height:32px;background:linear-gradient(to bottom,rgba(255,255,255,0.25),transparent);animation:shpulse 2s ease-in-out infinite;}
-@keyframes shpulse{0%,100%{opacity:0.3}50%{opacity:1}}
-
-/* ─────────────────────────────────────────────
-   UTILITY
-───────────────────────────────────────────── */
-.hidden{display:none;}
+.el.on{opacity:1;transform:translateY(0);}
+.el .d{color:rgba(74,222,128,.3);}
+.el .w{color:#F2EDE3;}
+.el .g{color:#C4A96A;}
+.ct-links{margin-top:28px;display:flex;flex-direction:column;gap:8px;opacity:0;transition:opacity .8s ease;}
+.ct-links.on{opacity:1;}
+.ct-row{display:flex;align-items:baseline;gap:14px;}
+.ct-k{font-family:var(--mono);font-size:7.5px;letter-spacing:.18em;text-transform:uppercase;color:rgba(74,222,128,.35);min-width:65px;}
+.ct-v{font-family:var(--mono);font-size:12px;color:rgba(242,237,227,.75);text-decoration:none;transition:color .2s;}
+.ct-v:hover{color:#4ADE80;}
 </style>
 </head>
 <body>
 
-<!-- PROGRESS BAR -->
 <div id="progress-bar"></div>
-<div id="scene-counter">SCENE 0 / 9 — VOID</div>
+<div id="hud"><div class="hud-scene" id="hud-scene">SCENE 0</div><div id="hud-name">VOID</div></div>
+<div id="scroll-hint"><div class="sh-line"></div><span>scroll to enter</span></div>
 
-<!-- SCROLL HINT -->
-<div id="scroll-hint">
-  <div class="sh-line"></div>
-  <span>scroll to enter</span>
+<!-- ══════════════ STAGE ══════════════ -->
+<div id="stage">
+<div id="bg"></div>
+<div id="grid"></div>
+<div id="grain"></div>
+
+<!-- S0 VOID -->
+<div class="layer" id="s-void"><div class="gf"></div><div class="lbl">[ system standby ]</div></div>
+
+<!-- S1 BOOT -->
+<div class="layer" id="s-boot">
+  <div class="tl" id="tl0"><span class="p">$</span> initializing research system...</div>
+  <div class="tl" id="tl1"><span class="p">→</span> <span class="d">loading knowledge graph… </span><span style="color:#4ADE80">done</span></div>
+  <div class="tl" id="tl2"><span class="p">→</span> <span class="d">resolving identity… </span><span style="color:#4ADE80">found</span></div>
+  <div class="tl" id="tl3"><span class="p">→</span> <span class="d">publications: </span><span class="hl">4 verified</span></div>
+  <div class="tl" id="tl4"><span class="p">→</span> <span class="d">mapping nodes… </span><span style="color:#4ADE80" id="node-names">—</span></div>
+  <div class="tl" id="tl5"><span class="p">$</span> enter system <span class="cur"></span></div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     STICKY STAGE
-════════════════════════════════════════════ -->
-<div id="stage">
-  <div id="bg"></div>
-  <div id="grid"></div>
-  <div id="grain"></div>
-
-  <!-- ── S0: VOID ── -->
-  <div class="scene" id="s0">
-    <div class="grain-flicker"></div>
-    <div class="boot-label">[ system standby ]</div>
-  </div>
-
-  <!-- ── S1: TERMINAL BOOT ── -->
-  <div class="scene" id="s1">
-    <div id="term-block">
-      <div class="term-line" id="tl0"><span class="prompt">$</span> initializing research system...</div>
-      <div class="term-line" id="tl1"><span class="prompt">→</span> <span class="dim">loading knowledge graph... </span><span style="color:#4ADE80">done</span></div>
-      <div class="term-line" id="tl2"><span class="prompt">→</span> <span class="dim">resolving identity... </span><span style="color:#4ADE80">found</span></div>
-      <div class="term-line" id="tl3"><span class="prompt">→</span> <span class="dim">publications: </span><span style="color:#C4A96A">4 verified</span></div>
-      <div class="term-line" id="tl4"><span class="prompt">→</span> <span class="dim">mapping nodes... </span><span style="color:#4ADE80">FOCA, DECKER, GoCoMA, CORAL</span></div>
-      <div class="term-line" id="tl5"><span class="prompt">$</span> enter system <span class="term-cursor"></span></div>
-    </div>
-  </div>
-
-  <!-- ── S2: IDENTITY EMERGENCE ── -->
-  <div class="scene" id="s2">
-    <!-- Rings SVG -->
-    <div class="id-rings-wrap" id="rings-wrap">
-      <svg width="520" height="520" viewBox="0 0 520 520" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
-        <circle cx="260" cy="260" r="240" fill="none" stroke="rgba(26,26,26,0.06)" stroke-width="1" stroke-dasharray="5,10"/>
-        <circle cx="260" cy="260" r="180" fill="none" stroke="rgba(59,107,80,0.12)" stroke-width="1" stroke-dasharray="3,7"/>
-        <circle cx="260" cy="260" r="118" fill="none" stroke="rgba(59,107,80,0.2)" stroke-width="1.2"/>
-        <circle cx="260" cy="260" r="72" fill="rgba(242,237,227,0.9)" stroke="rgba(26,26,26,0.2)" stroke-width="1"/>
-        <!-- Tick marks -->
-        <g stroke="rgba(26,26,26,0.15)" stroke-width="0.8">
-          <line x1="260" y1="20" x2="260" y2="36"/>
-          <line x1="260" y1="484" x2="260" y2="500"/>
-          <line x1="20" y1="260" x2="36" y2="260"/>
-          <line x1="484" y1="260" x2="500" y2="260"/>
-          <line x1="92" y1="92" x2="103" y2="103"/>
-          <line x1="417" y1="103" x2="428" y2="92"/>
-          <line x1="103" y1="417" x2="92" y2="428"/>
-          <line x1="417" y1="417" x2="428" y2="428"/>
-        </g>
-        <text x="260" y="14" font-family="'Space Mono',monospace" font-size="7" fill="rgba(26,26,26,0.2)" letter-spacing="2" text-anchor="middle">N</text>
-        <text x="260" y="512" font-family="'Space Mono',monospace" font-size="7" fill="rgba(26,26,26,0.2)" letter-spacing="2" text-anchor="middle">S</text>
-        <text x="510" y="263" font-family="'Space Mono',monospace" font-size="7" fill="rgba(26,26,26,0.2)" text-anchor="middle">E</text>
-        <text x="8" y="263" font-family="'Space Mono',monospace" font-size="7" fill="rgba(26,26,26,0.2)" text-anchor="middle">W</text>
-      </svg>
-    </div>
-    <!-- Orbit labels -->
-    <div class="orbit-label" id="ol-ml" style="top:28%;left:50%;transform:translateX(-50%);">Machine Learning</div>
-    <div class="orbit-label" id="ol-sec" style="top:50%;right:12%;transform:translateY(-50%);">Security</div>
-    <div class="orbit-label" id="ol-sys" style="bottom:26%;left:50%;transform:translateX(-50%);">Systems</div>
-    <div class="orbit-label" id="ol-nlp" style="top:50%;left:12%;transform:translateY(-50%);">NLP · Audio</div>
-    <!-- Name -->
-    <div class="id-name-wrap" id="id-name-wrap">
-      <div class="id-name">VIK<em>RANT</em><br>VIK<em>RAM</em></div>
-      <div class="id-sub" id="id-sub">Security &amp; AI · PhD Applicant · 2025</div>
-    </div>
-  </div>
-
-  <!-- ── S3/4/5/6: MAP CANVAS (persistent across scenes) ── -->
-  <div id="map-canvas">
-    <!-- Background paper -->
-    <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 46%,#F2EDE3,#E8E0D2 70%,#DDD3C0);"></div>
-
-    <!-- SVG connectors -->
-    <svg style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;" id="conn-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-      <!-- Rings -->
-      <circle cx="50" cy="50" r="32" fill="none" stroke="rgba(26,26,26,0.05)" stroke-width="0.15" stroke-dasharray="0.5,1"/>
-      <circle cx="50" cy="50" r="22" fill="none" stroke="rgba(59,107,80,0.1)" stroke-width="0.12" stroke-dasharray="0.3,0.7"/>
-      <circle cx="50" cy="50" r="13" fill="none" stroke="rgba(59,107,80,0.18)" stroke-width="0.12"/>
-      <circle cx="50" cy="50" r="8" fill="rgba(242,237,227,0.95)" stroke="rgba(26,26,26,0.22)" stroke-width="0.15"/>
-
-      <!-- Grid accent lines -->
-      <line x1="50" y1="0" x2="50" y2="100" stroke="rgba(26,26,26,0.03)" stroke-width="0.12"/>
-      <line x1="0" y1="50" x2="100" y2="50" stroke="rgba(26,26,26,0.03)" stroke-width="0.12"/>
-
-      <!-- FOCA connector (top-left) -->
-      <line id="c-foca" class="conn-line" x1="42" y1="42" x2="20" y2="22" stroke="rgba(59,107,80,0.35)" stroke-width="0.18"/>
-      <!-- DECKER connector (top-right) -->
-      <line id="c-decker" class="conn-line" x1="58" y1="42" x2="80" y2="22" stroke="rgba(59,107,80,0.35)" stroke-width="0.18"/>
-      <!-- GoCoMA connector (bottom-left) -->
-      <line id="c-gocoma" class="conn-line" x1="42" y1="58" x2="20" y2="78" stroke="rgba(59,107,80,0.35)" stroke-width="0.18"/>
-      <!-- CORAL connector (bottom-right) -->
-      <line id="c-coral" class="conn-line" x1="58" y1="58" x2="80" y2="78" stroke="rgba(59,107,80,0.35)" stroke-width="0.18"/>
-
-      <!-- Cross connections (scene 6) -->
-      <path id="cx-hyp" class="conn-line" d="M 22,20 Q 50,10 78,20" fill="none" stroke="rgba(138,112,64,0.28)" stroke-width="0.15" stroke-dasharray="0.4,0.6"/>
-      <path id="cx-dom" d="M 22,80 Q 50,90 78,80" fill="none" stroke="rgba(138,112,64,0.28)" stroke-width="0.15" stroke-dasharray="0.4,0.6" stroke-dashoffset="50" style="stroke-dasharray:50;stroke-dashoffset:50;transition:stroke-dashoffset 1.2s ease;"/>
-      <path id="cx-ml" d="M 20,24 Q 10,50 20,76" fill="none" stroke="rgba(122,61,40,0.18)" stroke-width="0.12" stroke-dasharray="0.3,0.6" style="stroke-dasharray:60;stroke-dashoffset:60;transition:stroke-dashoffset 1.2s ease 0.3s;"/>
-      <path id="cx-sec" d="M 80,24 Q 90,50 80,76" fill="none" stroke="rgba(122,61,40,0.18)" stroke-width="0.12" stroke-dasharray="0.3,0.6" style="stroke-dasharray:60;stroke-dashoffset:60;transition:stroke-dashoffset 1.2s ease 0.5s;"/>
-
-      <!-- Tick marks on outer ring -->
-      <g stroke="rgba(26,26,26,0.12)" stroke-width="0.12">
-        <line x1="50" y1="18" x2="50" y2="21"/>
-        <line x1="50" y1="79" x2="50" y2="82"/>
-        <line x1="18" y1="50" x2="21" y2="50"/>
-        <line x1="79" y1="50" x2="82" y2="50"/>
+<!-- S2 IDENTITY -->
+<div class="layer" id="s-id">
+  <div class="id-rings" id="id-rings">
+    <svg width="500" height="500" viewBox="0 0 500 500" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
+      <circle cx="250" cy="250" r="230" fill="none" stroke="rgba(26,26,26,.06)" stroke-width="1" stroke-dasharray="5,10"/>
+      <circle cx="250" cy="250" r="172" fill="none" stroke="rgba(59,107,80,.11)" stroke-width="1" stroke-dasharray="3,7"/>
+      <circle cx="250" cy="250" r="112" fill="none" stroke="rgba(59,107,80,.2)" stroke-width="1.2"/>
+      <circle cx="250" cy="250" r="68" fill="rgba(242,237,227,.9)" stroke="rgba(26,26,26,.2)" stroke-width="1"/>
+      <g stroke="rgba(26,26,26,.12)" stroke-width=".8">
+        <line x1="250" y1="18" x2="250" y2="32"/><line x1="250" y1="468" x2="250" y2="482"/>
+        <line x1="18" y1="250" x2="32" y2="250"/><line x1="468" y1="250" x2="482" y2="250"/>
       </g>
-
-      <!-- Board header lines -->
-      <text x="50" y="7" font-family="'Space Mono',monospace" font-size="2.2" fill="rgba(26,26,26,0.2)" letter-spacing="0.5" text-anchor="middle">RESEARCH SYSTEM MAP — 2024–2026</text>
-      <text x="50" y="95" font-family="'Space Mono',monospace" font-size="1.8" fill="rgba(26,26,26,0.15)" letter-spacing="0.3" text-anchor="middle">VIKRANT VIKRAM · SECURITY &amp; AI · TLP:WHITE</text>
     </svg>
-
-    <!-- Core label -->
-    <div id="core-label">
-      <div class="cn">VIK<em>RANT</em></div>
-      <div class="cr">Sec · AI · PhD</div>
-    </div>
-
-    <!-- PROJECT NODES -->
-    <!-- FOCA: top-left -->
-    <div class="p-node" id="n-foca" style="top:6%;left:3%;">
-      <div class="pulse-dot"></div>
-      <div class="pn-num">NODE / 001</div>
-      <div class="pn-title">FOCA</div>
-      <div class="pn-venue">ICASSP 2026</div>
-      <div class="pn-desc">Hyperbolic cross-attention for multimodal malware classification across heterogeneous execution environments.</div>
-      <div class="pn-tags"><span class="pn-tag">multimodal</span><span class="pn-tag">hyperbolic</span><span class="pn-tag">malware</span></div>
-    </div>
-
-    <!-- DECKER: top-right -->
-    <div class="p-node" id="n-decker" style="top:6%;right:3%;">
-      <div class="pulse-dot"></div>
-      <div class="pn-num">NODE / 002</div>
-      <div class="pn-title">DECKER</div>
-      <div class="pn-venue">AsiaCCS 2026</div>
-      <div class="pn-desc">Domain-invariant embeddings for cross-device acoustic keystroke recognition via audio side-channel.</div>
-      <div class="pn-tags"><span class="pn-tag">audio ML</span><span class="pn-tag">side-channel</span><span class="pn-tag">domain shift</span></div>
-    </div>
-
-    <!-- GoCoMA: bottom-left -->
-    <div class="p-node" id="n-gocoma" style="bottom:8%;left:3%;">
-      <div class="pulse-dot"></div>
-      <div class="pn-num">NODE / 003</div>
-      <div class="pn-title">GoCoMA</div>
-      <div class="pn-venue">ICME 2026</div>
-      <div class="pn-desc">Hyperbolic multimodal fusion for attributing LLM-generated code to authorship and model families.</div>
-      <div class="pn-tags"><span class="pn-tag">LLMs</span><span class="pn-tag">code intel</span><span class="pn-tag">attribution</span></div>
-    </div>
-
-    <!-- CORAL: bottom-right -->
-    <div class="p-node" id="n-coral" style="bottom:8%;right:3%;">
-      <div class="pulse-dot"></div>
-      <div class="pn-num">NODE / 004</div>
-      <div class="pn-title">CORAL</div>
-      <div class="pn-venue">AACL-IJCNLP 2025</div>
-      <div class="pn-desc">Socially-aware deception detection using positive–unlabeled learning over conversational structure.</div>
-      <div class="pn-tags"><span class="pn-tag">NLP</span><span class="pn-tag">PU learning</span><span class="pn-tag">deception</span></div>
-    </div>
-
-    <!-- Floating map annotations -->
-    <div class="map-ann" id="ann1" style="top:42%;left:1.5%;writing-mode:vertical-rl;transform:rotate(180deg);">behavioral signals</div>
-    <div class="map-ann" id="ann2" style="top:54%;right:1.5%;">noise robustness</div>
-    <div class="map-ann" id="ann3" style="top:30%;left:37%;">representation</div>
-    <div class="map-ann" id="ann4" style="bottom:18%;left:37%;">domain shift</div>
-    <div class="map-ann" id="ann5" style="top:12%;left:44%;">adversarial</div>
-    <div class="map-ann" id="ann6" style="bottom:20%;right:22%;">real-world constraints</div>
-  </div><!-- /map-canvas -->
-
-  <!-- FOCUS PANEL (scene 5) -->
-  <div id="focus-panel">
-    <div class="fp-label" id="fp-label">Active Node — Focus</div>
-    <div class="fp-title" id="fp-title"><em>FOCA</em></div>
-    <div class="fp-divider"></div>
-    <div class="fp-row" id="fp-r0"><span class="fp-key">problem</span><span class="fp-val" id="fp-prob">How do models classify malware robustly across heterogeneous execution environments?</span></div>
-    <div class="fp-row" id="fp-r1"><span class="fp-key">approach</span><span class="fp-val" id="fp-appr">Hyperbolic cross-attention over multimodal signals — behavioral, static, and dynamic traces fused in curved space.</span></div>
-    <div class="fp-row" id="fp-r2"><span class="fp-key">result</span><span class="fp-val" id="fp-res">ICASSP 2026 acceptance. State-of-art on cross-environment malware classification benchmarks.</span></div>
-    <div class="fp-row" id="fp-r3"><span class="fp-key">open q.</span><span class="fp-val" id="fp-open">Does hyperbolic curvature parameter need per-domain tuning?</span></div>
   </div>
-
-  <!-- CONCEPT PILLS (scene 6) -->
-  <div class="concept-pill" id="cp1" style="top:12%;left:50%;transform:translateX(-50%);">hyperbolic geometry</div>
-  <div class="concept-pill" id="cp2" style="top:50%;left:50%;transform:translate(-50%,-50%) translateX(-220px);">domain invariance</div>
-  <div class="concept-pill" id="cp3" style="top:50%;right:5%;transform:translateY(-50%);">multimodal fusion</div>
-  <div class="concept-pill" id="cp4" style="bottom:12%;left:50%;transform:translateX(-50%);">PU learning</div>
-  <div class="concept-pill" id="cp5" style="top:28%;left:22%;">adversarial robustness</div>
-  <div class="concept-pill" id="cp6" style="bottom:28%;right:22%;">behavioral signals</div>
-
-  <!-- FOUNDATION (scene 7) -->
-  <div id="foundation">
-    <div class="fd-col">
-      <div class="fd-label">Education</div>
-      <div class="fd-h">B.Tech<br><em>CS</em></div>
-      <div class="fd-item hi show">2020 — 2024</div>
-      <div class="fd-item" id="fd0">Machine Learning</div>
-      <div class="fd-item" id="fd1">System Security</div>
-      <div class="fd-item" id="fd2">Deep Learning</div>
-      <div class="fd-item" id="fd3">NLP · Algorithms</div>
-      <div class="fd-item" id="fd4">Cryptography · OS</div>
-    </div>
-    <div class="fd-col">
-      <div class="fd-label">Skills Cluster</div>
-      <div class="fd-h">Technical<br><em>Stack</em></div>
-      <div style="margin-top:10px;">
-        <div style="font-family:var(--mono);font-size:7px;letter-spacing:0.15em;text-transform:uppercase;color:var(--rust);margin-bottom:6px;">ML</div>
-        <div class="skill-wrap" style="margin-bottom:10px;">
-          <span class="sk core" id="sk0">PyTorch</span><span class="sk core" id="sk1">Transformers</span>
-          <span class="sk" id="sk2">HuggingFace</span><span class="sk" id="sk3">hyperbolic</span>
-          <span class="sk" id="sk4">multimodal</span>
-        </div>
-        <div style="font-family:var(--mono);font-size:7px;letter-spacing:0.15em;text-transform:uppercase;color:var(--rust);margin-bottom:6px;">Security</div>
-        <div class="skill-wrap" style="margin-bottom:10px;">
-          <span class="sk core" id="sk5">malware analysis</span><span class="sk" id="sk6">side-channel</span>
-          <span class="sk" id="sk7">adversarial ML</span>
-        </div>
-        <div style="font-family:var(--mono);font-size:7px;letter-spacing:0.15em;text-transform:uppercase;color:var(--rust);margin-bottom:6px;">Programming</div>
-        <div class="skill-wrap">
-          <span class="sk core" id="sk8">Python</span><span class="sk" id="sk9">C/C++</span>
-          <span class="sk" id="sk10">CUDA</span><span class="sk" id="sk11">LaTeX</span>
-          <span class="sk" id="sk12">Linux</span>
-        </div>
-      </div>
-    </div>
-    <div class="fd-col">
-      <div class="fd-label">Publications</div>
-      <div class="fd-h">Research<br><em>Index</em></div>
-      <div class="fd-item hi" id="fd5" style="border-left-color:var(--gold)">FOCA · ICASSP 2026</div>
-      <div class="fd-item" id="fd6">DECKER · AsiaCCS 2026</div>
-      <div class="fd-item" id="fd7">GoCoMA · ICME 2026</div>
-      <div class="fd-item" id="fd8">CORAL · AACL 2025</div>
-      <div style="font-family:var(--mono);font-size:7px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(26,26,26,0.25);margin-top:16px;padding-top:12px;border-top:1px dashed var(--ink-ghost);">
-        — 4 peer-reviewed papers<br>
-        — top ML &amp; security venues<br>
-        — 2025 PhD applicant
-      </div>
-    </div>
-  </div><!-- /foundation -->
-
-  <!-- THINKING LAYER (scene 8) -->
-  <div id="thinking-layer">
-    <svg id="think-arrows" width="100%" height="100%">
-      <line id="ta1" class="think-line" x1="22%" y1="20%" x2="38%" y2="34%" stroke="rgba(122,61,40,0.3)" stroke-width="1"/>
-      <line id="ta2" class="think-line" x1="70%" y1="25%" x2="60%" y2="38%" stroke="rgba(122,61,40,0.3)" stroke-width="1"/>
-      <line id="ta3" class="think-line" x1="25%" y1="62%" x2="36%" y2="55%" stroke="rgba(138,112,64,0.3)" stroke-width="1"/>
-      <line id="ta4" class="think-line" x1="72%" y1="65%" x2="62%" y2="58%" stroke="rgba(138,112,64,0.3)" stroke-width="1"/>
-      <!-- Arrowheads -->
-      <polygon id="ah1" points="38,34 35,30 41,30" transform="translate(-0.5%,-0.5%)" fill="rgba(122,61,40,0.3)" opacity="0" style="transition:opacity 0.5s ease 0.5s;"/>
-    </svg>
-
-    <div class="thought-note" id="tn0" style="top:10%;left:4%;transform:rotate(-1.5deg);">
-      <div class="thought-key">problem</div>
-      How do we make ML models robust to the long tail of real-world adversarial variation?
-    </div>
-    <div class="thought-note" id="tn1" style="top:8%;right:4%;transform:rotate(1deg);">
-      <div class="thought-key">approach</div>
-      Hyperbolic spaces encode hierarchical structure better. Curved geometry → better security taxonomy representation.
-    </div>
-    <div class="thought-note" id="tn2" style="bottom:18%;left:4%;transform:rotate(1.2deg);">
-      <div class="thought-key">limitation</div>
-      Domain shift at inference remains the hard problem. Cross-device acoustic models degrade on unseen hardware.
-    </div>
-    <div class="thought-note" id="tn3" style="bottom:16%;right:4%;transform:rotate(-0.8deg);">
-      <div class="thought-key">future work</div>
-      Foundation model as unified encoder — one latent space for malware, network flows, and behavioral traces.
-    </div>
-    <div class="thought-note" id="tn4" style="top:44%;left:2%;transform:rotate(-0.5deg);">
-      <div class="thought-key">open question</div>
-      Can LLM code attribution survive adversarial obfuscation at inference time?
-    </div>
-    <div class="thought-note" id="tn5" style="top:42%;right:2%;transform:rotate(0.8deg);">
-      <div class="thought-key">next direction</div>
-      Causal reasoning over behavioral traces — moving beyond correlation.
-    </div>
+  <div class="orbit" id="o-ml" style="top:20%;left:50%;transform:translateX(-50%);">Machine Learning</div>
+  <div class="orbit" id="o-sec" style="top:50%;right:10%;transform:translateY(-50%);">Security</div>
+  <div class="orbit" id="o-sys" style="bottom:20%;left:50%;transform:translateX(-50%);">Systems</div>
+  <div class="orbit" id="o-nlp" style="top:50%;left:10%;transform:translateY(-50%);">NLP · Audio</div>
+  <div class="id-name" id="id-name">
+    <h1>VIK<em>RANT</em><br>VIK<em>RAM</em></h1>
+    <div class="sub" id="id-sub">Security &amp; AI · PhD Applicant · 2025</div>
   </div>
+</div>
 
-  <!-- SCENE 9: TERMINAL EXIT -->
-  <div class="scene" id="s9">
-    <div class="exit-term">
-      <div class="exit-line" id="el0"><span class="dim">$</span> system scan complete.</div>
-      <div class="exit-line" id="el1"><span class="dim">→</span> <span class="hi">researcher identified:</span> <span class="gold">VIKRANT VIKRAM</span></div>
-      <div class="exit-line" id="el2"><span class="dim">→</span> publications: <span class="gold">4 accepted</span> · venues: ICASSP, AsiaCCS, ICME, AACL</div>
-      <div class="exit-line" id="el3"><span class="dim">→</span> research vectors: <span class="hi">adversarial ML, multimodal, side-channel, deception</span></div>
-      <div class="exit-line" id="el4"><span class="dim">→</span> status: <span style="color:#4ADE80">phd applicant — 2025 cycle</span></div>
-      <div class="exit-line" id="el5" style="margin-top:16px;"><span class="dim">$</span> initiate contact? <span class="term-cursor"></span></div>
-      <div class="contact-links" id="contact-links">
-        <div class="cl-row"><span class="cl-key">email</span><a class="cl-val" href="mailto:vikrant@proton.me">vikrant@proton.me</a></div>
-        <div class="cl-row"><span class="cl-key">linkedin</span><a class="cl-val" href="https://linkedin.com/in/vikrant-vikram-a07418185" target="_blank">vikrant-vikram-a07418185</a></div>
-        <div class="cl-row"><span class="cl-key">github</span><a class="cl-val" href="#">github/vikrant-v</a></div>
-        <div class="cl-row"><span class="cl-key">signal</span><span class="cl-val" style="color:rgba(242,237,227,0.3);cursor:default;">on request</span></div>
-      </div>
-    </div>
+<!-- MAP CANVAS (Scenes 3-9) -->
+<div id="map-canvas" class="zoom-in">
+  <div class="paper"></div>
+  <svg id="conn-svg" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+    <circle cx="50" cy="50" r="32" fill="none" stroke="rgba(26,26,26,.04)" stroke-width=".15" stroke-dasharray=".5,1"/>
+    <circle cx="50" cy="50" r="22" fill="none" stroke="rgba(59,107,80,.09)" stroke-width=".12" stroke-dasharray=".3,.7"/>
+    <circle cx="50" cy="50" r="13" fill="none" stroke="rgba(59,107,80,.18)" stroke-width=".12"/>
+    <circle cx="50" cy="50" r="8" fill="rgba(242,237,227,.95)" stroke="rgba(26,26,26,.22)" stroke-width=".15"/>
+    <line x1="50" y1="0" x2="50" y2="100" stroke="rgba(26,26,26,.03)" stroke-width=".1"/>
+    <line x1="0" y1="50" x2="100" y2="50" stroke="rgba(26,26,26,.03)" stroke-width=".1"/>
+    <!-- Node connectors -->
+    <line id="c0" class="cline" x1="43" y1="43" x2="20" y2="22" stroke="rgba(59,107,80,.35)" stroke-width=".18"/>
+    <line id="c1" class="cline" x1="57" y1="43" x2="80" y2="22" stroke="rgba(59,107,80,.35)" stroke-width=".18"/>
+    <line id="c2" class="cline" x1="43" y1="57" x2="20" y2="78" stroke="rgba(59,107,80,.35)" stroke-width=".18"/>
+    <line id="c3" class="cline" x1="57" y1="57" x2="80" y2="78" stroke="rgba(59,107,80,.35)" stroke-width=".18"/>
+    <!-- Cross-connections (scene 6) -->
+    <path id="cx0" class="cline" d="M 22,20 Q 50,10 78,20" fill="none" stroke="rgba(138,112,64,.28)" stroke-width=".14" stroke-dasharray=".4,.6"/>
+    <path id="cx1" class="cline" d="M 22,80 Q 50,90 78,80" fill="none" stroke="rgba(138,112,64,.28)" stroke-width=".14" stroke-dasharray=".4,.6"/>
+    <path id="cx2" class="cline" d="M 20,24 Q 10,50 20,76" fill="none" stroke="rgba(122,61,40,.18)" stroke-width=".12" stroke-dasharray=".3,.6"/>
+    <path id="cx3" class="cline" d="M 80,24 Q 90,50 80,76" fill="none" stroke="rgba(122,61,40,.18)" stroke-width=".12" stroke-dasharray=".3,.6"/>
+    <text x="50" y="7" font-family="'Space Mono'" font-size="2.2" fill="rgba(26,26,26,.18)" letter-spacing=".4" text-anchor="middle">RESEARCH SYSTEM MAP — 2024–2026</text>
+    <text x="50" y="95.5" font-family="'Space Mono'" font-size="1.7" fill="rgba(26,26,26,.14)" letter-spacing=".3" text-anchor="middle">VIKRANT VIKRAM · SECURITY &amp; AI · TLP:WHITE</text>
+  </svg>
+  <!-- Core -->
+  <div id="core"><div class="cn">VIK<em>RANT</em></div><div class="cr">Sec · AI · PhD</div></div>
+  <!-- Project nodes injected by JS -->
+  <div id="nodes-wrap"></div>
+  <!-- Annotations -->
+  <div class="mann" id="a0" style="top:42%;left:1%;writing-mode:vertical-rl;transform:rotate(180deg);">behavioral signals</div>
+  <div class="mann" id="a1" style="top:54%;right:1%;">noise robustness</div>
+  <div class="mann" id="a2" style="top:28%;left:36%;">representation</div>
+  <div class="mann" id="a3" style="bottom:17%;left:37%;">domain shift</div>
+  <div class="mann" id="a4" style="top:11%;left:43%;">adversarial</div>
+  <div class="mann" id="a5" style="bottom:20%;right:20%;">real-world constraints</div>
+  <!-- Concept pills (scene 6) -->
+  <div class="cpill" id="cp0" style="top:10%;left:50%;transform:translateX(-50%);">hyperbolic geometry</div>
+  <div class="cpill" id="cp1" style="top:50%;left:4%;transform:translateY(-50%);">domain invariance</div>
+  <div class="cpill" id="cp2" style="top:50%;right:4%;transform:translateY(-50%);">multimodal fusion</div>
+  <div class="cpill" id="cp3" style="bottom:10%;left:50%;transform:translateX(-50%);">PU learning</div>
+  <div class="cpill" id="cp4" style="top:25%;left:22%;">adversarial robustness</div>
+  <div class="cpill" id="cp5" style="bottom:26%;right:20%;">behavioral signals</div>
+</div>
+
+<!-- FOCUS PANEL -->
+<div id="focus-panel">
+  <div class="fp-lbl" id="fp-lbl">Active Node</div>
+  <div class="fp-title" id="fp-title"></div>
+  <div class="fp-div"></div>
+  <div class="fp-row" id="fp-r0"><span class="fp-key">problem</span><span class="fp-val" id="fp-prob"></span></div>
+  <div class="fp-row" id="fp-r1"><span class="fp-key">approach</span><span class="fp-val" id="fp-appr"></span></div>
+  <div class="fp-row" id="fp-r2"><span class="fp-key">result</span><span class="fp-val" id="fp-res"></span></div>
+  <div class="fp-row" id="fp-r3"><span class="fp-key">open q.</span><span class="fp-val" id="fp-open"></span></div>
+</div>
+
+<!-- FOUNDATION -->
+<div id="foundation">
+  <div class="fd-col">
+    <div class="fd-lbl">Education</div>
+    <div class="fd-h">B.Tech<br><em>CS</em></div>
+    <div class="fd-item ac on">2020 — 2024</div>
+    <div class="fd-item" id="fd0">Machine Learning</div>
+    <div class="fd-item" id="fd1">System Security</div>
+    <div class="fd-item" id="fd2">Deep Learning</div>
+    <div class="fd-item" id="fd3">NLP · Algorithms</div>
+    <div class="fd-item" id="fd4">Cryptography · OS</div>
   </div>
+  <div class="fd-col">
+    <div class="fd-lbl">Skills</div>
+    <div class="fd-h">Technical<br><em>Stack</em></div>
+    <div style="margin-top:8px;" id="skills-render"></div>
+  </div>
+  <div class="fd-col">
+    <div class="fd-lbl">Publications</div>
+    <div class="fd-h">Research<br><em>Index</em></div>
+    <div id="pubs-render"></div>
+  </div>
+</div>
+
+<!-- BLOG -->
+<div id="blog-layer">
+  <div class="blog-header">
+    <h2>Field<br><em>Notes</em></h2>
+    <div class="bh-meta">Research Journal<br>Essays · Analysis · Process<br>——<br>2024–2025</div>
+  </div>
+  <div class="blog-body">
+    <div class="blog-feat" id="blog-feat"></div>
+    <div class="blog-list" id="blog-list"></div>
+  </div>
+</div>
+
+<!-- THINKING -->
+<div id="think-layer">
+  <svg id="think-svg">
+    <line id="ta0" class="ta" x1="22%" y1="20%" x2="38%" y2="34%" stroke="rgba(122,61,40,.3)" stroke-width="1"/>
+    <line id="ta1" class="ta" x1="70%" y1="24%" x2="60%" y2="37%" stroke="rgba(122,61,40,.3)" stroke-width="1"/>
+    <line id="ta2" class="ta" x1="25%" y1="63%" x2="37%" y2="54%" stroke="rgba(138,112,64,.3)" stroke-width="1"/>
+    <line id="ta3" class="ta" x1="73%" y1="65%" x2="62%" y2="57%" stroke="rgba(138,112,64,.3)" stroke-width="1"/>
+  </svg>
+  <div class="tnote" id="tn0" style="top:9%;left:4%;transform:rotate(-1.5deg);"></div>
+  <div class="tnote" id="tn1" style="top:7%;right:4%;transform:rotate(1deg);"></div>
+  <div class="tnote" id="tn2" style="bottom:17%;left:4%;transform:rotate(1.2deg);"></div>
+  <div class="tnote" id="tn3" style="bottom:15%;right:4%;transform:rotate(-.8deg);"></div>
+  <div class="tnote" id="tn4" style="top:44%;left:2%;transform:rotate(-.5deg);"></div>
+  <div class="tnote" id="tn5" style="top:42%;right:2%;transform:rotate(.8deg);"></div>
+</div>
+
+<!-- S10 EXIT -->
+<div class="layer" id="s-exit">
+  <div class="el" id="el0"><span class="d">$</span> system scan complete.</div>
+  <div class="el" id="el1"><span class="d">→</span> <span class="w">researcher identified:</span> <span class="g">VIKRANT VIKRAM</span></div>
+  <div class="el" id="el2"><span class="d">→</span> publications: <span class="g" id="el-pubs">—</span></div>
+  <div class="el" id="el3"><span class="d">→</span> research vectors: <span class="w" id="el-vecs">—</span></div>
+  <div class="el" id="el4"><span class="d">→</span> status: <span style="color:#4ADE80">phd applicant — 2025 cycle</span></div>
+  <div class="el" id="el5" style="margin-top:14px;"><span class="d">$</span> initiate contact? <span class="cur"></span></div>
+  <div class="ct-links" id="ct-links">
+    <div class="ct-row"><span class="ct-k">email</span><a class="ct-v" href="mailto:vikrant@proton.me">vikrant@proton.me</a></div>
+    <div class="ct-row"><span class="ct-k">linkedin</span><a class="ct-v" href="https://linkedin.com/in/vikrant-vikram-a07418185" target="_blank">vikrant-vikram-a07418185</a></div>
+    <div class="ct-row"><span class="ct-k">github</span><a class="ct-v" href="#">github/vikrant-v</a></div>
+    <div class="ct-row"><span class="ct-k">signal</span><span class="ct-v" style="color:rgba(242,237,227,.28);cursor:default;">on request</span></div>
+  </div>
+</div>
 
 </div><!-- /stage -->
 
 <script>
-/* ════════════════════════════════════════════
-   SCROLL ENGINE — maps scroll progress to scenes
-════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   ██████╗  █████╗ ████████╗ █████╗
+   ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗
+   ██║  ██║███████║   ██║   ███████║
+   ██║  ██║██╔══██║   ██║   ██╔══██║
+   ██████╔╝██║  ██║   ██║   ██║  ██║
+   ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝
 
-const scenes = {
-  s0: { start:0,    end:0.05  },
-  s1: { start:0.05, end:0.15  },
-  s2: { start:0.15, end:0.25  },
-  s3: { start:0.25, end:0.35  },
-  s4: { start:0.35, end:0.50  },
-  s5: { start:0.50, end:0.65  },
-  s6: { start:0.65, end:0.75  },
-  s7: { start:0.75, end:0.85  },
-  s8: { start:0.85, end:0.95  },
-  s9: { start:0.95, end:1.00  },
-};
+   ALL CONTENT LIVES HERE.
+   To add a project: push to PROJECTS array.
+   To add a publication: push to PUBLICATIONS.
+   To add a blog post: push to BLOG_POSTS.
+   Nothing else needs to change.
+══════════════════════════════════════════════════════ */
 
-const sceneNames = ['VOID','BOOT','IDENTITY','SYSTEM ZOOM','NODES','FOCUS','CONNECTIONS','FOUNDATION','THINKING','CONTACT'];
+const PROJECTS = [
+  {
+    id:'foca', num:'001',
+    title:'FOCA', venue:'ICASSP 2026',
+    desc:'Hyperbolic cross-attention for multimodal malware classification across heterogeneous execution environments.',
+    tags:['multimodal','hyperbolic','malware'],
+    focus:{
+      problem:'How do models classify malware robustly across heterogeneous execution environments?',
+      approach:'Hyperbolic cross-attention over multimodal signals — behavioral, static, and dynamic traces fused in curved space.',
+      result:'ICASSP 2026. State-of-art on cross-environment malware classification benchmarks.',
+      open:'Does hyperbolic curvature need per-domain tuning at inference?'
+    },
+    pos:{ top:'6%', left:'3%' }
+  },
+  {
+    id:'decker', num:'002',
+    title:'DECKER', venue:'AsiaCCS 2026',
+    desc:'Domain-invariant embeddings for cross-device acoustic keystroke recognition via audio side-channel.',
+    tags:['audio ML','side-channel','domain shift'],
+    focus:{
+      problem:'Acoustic keystroke models degrade across keyboard hardware — how to generalize domain-invariantly?',
+      approach:'Contrastive domain alignment in embedding space; cross-device data augmentation during training.',
+      result:'AsiaCCS 2026. Significant accuracy retention on unseen keyboard types.',
+      open:'Can zero-shot cross-device transfer be achieved without any target-domain data?'
+    },
+    pos:{ top:'6%', right:'3%' }
+  },
+  {
+    id:'gocoma', num:'003',
+    title:'GoCoMA', venue:'ICME 2026',
+    desc:'Hyperbolic multimodal fusion for attributing LLM-generated code to authorship and model families.',
+    tags:['LLMs','code intel','attribution'],
+    focus:{
+      problem:'As LLMs proliferate, code authorship attribution becomes critical for provenance and copyright.',
+      approach:'Multimodal fusion of AST, token distribution, and stylometric signals in hyperbolic space.',
+      result:'ICME 2026. Robust attribution across 6 major LLM families.',
+      open:'Does adversarial code obfuscation break attribution? Robustness not yet tested.'
+    },
+    pos:{ bottom:'8%', left:'3%' }
+  },
+  {
+    id:'coral', num:'004',
+    title:'CORAL', venue:'AACL-IJCNLP 2025',
+    desc:'Socially-aware deception detection using positive–unlabeled learning over conversational structure.',
+    tags:['NLP','PU learning','deception'],
+    focus:{
+      problem:'Labeled deceptive data is scarce; existing models ignore social context in conversation.',
+      approach:'Positive-unlabeled learning with social graph embeddings over conversation thread structure.',
+      result:'AACL 2025. Improved detection on real-world deceptive forum datasets.',
+      open:'Does social context modeling scale to large multi-party deceptive corpora?'
+    },
+    pos:{ bottom:'8%', right:'3%' }
+  }
+  /* ← Add more projects here, same shape */
+];
 
-// Track which scenes have initialized (so we don't repeat)
-const inited = {};
-let lastScene = -1;
-let mapVisible = false;
+const PUBLICATIONS = [
+  { year:'2026', title:'FOCA: Multimodal Malware Classification via Hyperbolic Cross-Attention', venue:'ICASSP 2026' },
+  { year:'2026', title:'DECKER: Domain-invariant Embedding for Cross-Keyboard Keystroke Extraction', venue:'AsiaCCS 2026' },
+  { year:'2026', title:'GoCoMA: Hyperbolic Multimodal Fusion for LLM Code Attribution', venue:'ICME 2026' },
+  { year:'2025', title:'CORAL: Socially-Aware Deception Detection via PU Learning', venue:'AACL-IJCNLP 2025' }
+  /* ← Add more publications here */
+];
+
+const SKILLS = [
+  { group:'ML', items:[['PyTorch',true],['Transformers',true],['HuggingFace',false],['hyperbolic geom.',false],['multimodal',false]] },
+  { group:'Security', items:[['malware analysis',true],['side-channel',false],['adversarial ML',false]] },
+  { group:'Programming', items:[['Python',true],['C/C++',false],['CUDA',false],['LaTeX',false]] },
+  { group:'Systems', items:[['Linux',false],['Docker',false],['SLURM',false]] }
+  /* ← Add more skill groups here */
+];
+
+const BLOG_POSTS = [
+  {
+    featured:true,
+    tag:'Apr 2025 · 14 min read',
+    title:'Why Hyperbolic Space Works Better for Security Taxonomies',
+    excerpt:'Euclidean embeddings struggle with hierarchical security data — malware families, attack patterns, code provenance. Curved geometry is not an aesthetic choice; it is a structural one. Here is why.'
+  },
+  {
+    tag:'Mar 2025 · 9 min',
+    title:'On Domain Shift in Acoustic Side-Channel Models',
+    excerpt:'Cross-keyboard generalization is harder than it looks. Mechanical switch type, surface material, room acoustics — every variable is an adversarial perturbation you did not model.'
+  },
+  {
+    tag:'Jan 2025 · 12 min',
+    title:'Positive-Unlabeled Learning for Security Applications',
+    excerpt:'When labeled data is scarce and unlabeled data is abundant, PU learning is underutilized in security contexts. A practical overview with pitfalls.'
+  },
+  {
+    tag:'Nov 2024 · 7 min',
+    title:'LLM Code Attribution: What Models Expose About Themselves',
+    excerpt:'Every LLM leaves stylometric fingerprints in its generated code. Distributions over tokens, AST shapes, and indentation patterns are surprisingly discriminative.'
+  }
+  /* ← Add more blog posts here. Set featured:true on at most one. */
+];
+
+const THINKING_NOTES = [
+  { key:'problem',    text:'How do we make ML models robust to the long tail of real-world adversarial variation — noise, domain shift, unseen distributions?' },
+  { key:'approach',  text:'Hyperbolic spaces encode hierarchical structure naturally. Curved geometry → better security taxonomy representation at the boundary.' },
+  { key:'limitation',text:'Domain shift at inference remains the hard problem. Cross-device acoustic models degrade on unseen keyboard hardware types.' },
+  { key:'future',    text:'Foundation model as unified encoder — one latent space for malware, network flows, and behavioral traces across modalities.' },
+  { key:'open q.',   text:'Can LLM code attribution survive adversarial obfuscation at inference time? Robustness under active attack untested.' },
+  { key:'next',      text:'Causal reasoning over behavioral traces — moving beyond correlation to understand why, not just what.' }
+  /* ← Add more thinking notes here */
+];
+
+/* ═══════════════════════════════════════
+   BUILD DOM FROM DATA
+═══════════════════════════════════════ */
+function buildDOM(){
+  // Terminal node names
+  document.getElementById('node-names').textContent = PROJECTS.map(p=>p.title).join(', ');
+
+  // El-pubs / el-vecs for exit terminal
+  document.getElementById('el-pubs').textContent = PUBLICATIONS.length + ' accepted · ' + [...new Set(PUBLICATIONS.map(p=>p.venue.split(' ')[0]))].join(', ');
+  document.getElementById('el-vecs').textContent = 'adversarial ML, multimodal, side-channel, deception';
+
+  // Project nodes
+  const wrap = document.getElementById('nodes-wrap');
+  PROJECTS.forEach(p => {
+    const d = document.createElement('div');
+    d.className='pnode'; d.id='node-'+p.id;
+    Object.assign(d.style, p.pos);
+    d.innerHTML=`<div class="pdot"></div>
+      <div class="pn-n">NODE / ${p.num}</div>
+      <div class="pn-t">${p.title}</div>
+      <div class="pn-v">${p.venue}</div>
+      <div class="pn-d">${p.desc}</div>
+      <div class="pn-tags">${p.tags.map(t=>`<span class="pn-tg">${t}</span>`).join('')}</div>`;
+    wrap.appendChild(d);
+  });
+
+  // Skills in foundation
+  const sr = document.getElementById('skills-render');
+  SKILLS.forEach(g => {
+    const sec = document.createElement('div');
+    sec.style.marginBottom='10px';
+    sec.innerHTML=`<div style="font-family:var(--mono);font-size:7px;letter-spacing:.15em;text-transform:uppercase;color:var(--rust);margin-bottom:5px;">${g.group}</div>
+      <div class="sk-wrap">${g.items.map(([name,core],i)=>`<span class="sk${core?' core':''}" data-sk="${g.group}-${i}">${name}</span>`).join('')}</div>`;
+    sr.appendChild(sec);
+  });
+
+  // Publications in foundation
+  const pr = document.getElementById('pubs-render');
+  PUBLICATIONS.forEach(p => {
+    const d = document.createElement('div');
+    d.className='fd-item'; d.setAttribute('data-pub','1');
+    d.innerHTML=`<span style="color:var(--gold);font-family:var(--mono);font-size:7px;">${p.year}</span> ${p.title} <span style="color:var(--green);font-family:var(--mono);font-size:7px;display:block;letter-spacing:.1em;text-transform:uppercase;">${p.venue}</span>`;
+    pr.appendChild(d);
+  });
+
+  // Blog
+  const feat = BLOG_POSTS.find(p=>p.featured) || BLOG_POSTS[0];
+  document.getElementById('blog-feat').innerHTML=`
+    <div>
+      <div class="bf-tag">${feat.tag}</div>
+      <div class="bf-title">${feat.title}</div>
+      <p class="bf-ex">${feat.excerpt}</p>
+    </div>
+    <a href="#" class="bf-read">Read Entry</a>`;
+  const bl = document.getElementById('blog-list');
+  BLOG_POSTS.filter(p=>!p.featured).forEach(p => {
+    const d = document.createElement('div');
+    d.className='blog-item';
+    d.innerHTML=`<div class="bi-tag">${p.tag}</div><div class="bi-title">${p.title}</div><p class="bi-ex">${p.excerpt}</p>`;
+    bl.appendChild(d);
+  });
+
+  // Thinking notes
+  THINKING_NOTES.forEach((n,i) => {
+    const el = document.getElementById('tn'+i);
+    if(el) el.innerHTML=`<div class="tk">${n.key}</div>${n.text}`;
+  });
+}
+buildDOM();
+
+/* ═══════════════════════════════════════
+   SCENE DEFINITIONS
+   Each scene: { name, range:[start,end] }
+   Progress 0→1 maps to scrollY 0→max
+═══════════════════════════════════════ */
+const SCENES = [
+  { id:0, name:'VOID',        range:[0,    0.05] },
+  { id:1, name:'BOOT',        range:[0.05, 0.15] },
+  { id:2, name:'IDENTITY',    range:[0.15, 0.25] },
+  { id:3, name:'SYSTEM ZOOM', range:[0.25, 0.34] },
+  { id:4, name:'NODES',       range:[0.34, 0.48] },
+  { id:5, name:'FOCUS',       range:[0.48, 0.60] },
+  { id:6, name:'CONNECTIONS', range:[0.60, 0.70] },
+  { id:7, name:'FOUNDATION',  range:[0.70, 0.80] },
+  { id:8, name:'BLOG',        range:[0.80, 0.89] },
+  { id:9, name:'THINKING',    range:[0.89, 0.96] },
+  {id:10, name:'CONTACT',     range:[0.96, 1.00] },
+];
 
 function getProgress(){
   const max = document.body.scrollHeight - window.innerHeight;
-  return max > 0 ? window.scrollY / max : 0;
+  return max > 0 ? Math.min(1, window.scrollY / max) : 0;
 }
 
-function getScene(p){
-  for(const [name, s] of Object.entries(scenes)){
-    if(p >= s.start && p < s.end) return name;
+function getSceneId(p){
+  for(const s of SCENES){
+    if(p >= s.range[0] && p < s.range[1]) return s.id;
   }
-  return 's9';
+  return 10;
 }
 
-function sceneProgress(name, p){
-  const s = scenes[name];
-  return Math.max(0, Math.min(1, (p - s.start) / (s.end - s.start)));
-}
+/* ── Helpers ── */
+const $ = id => document.getElementById(id);
+const on  = (id, cls='on') => { const e=$(id); if(e) e.classList.add(cls); };
+const off = (id, cls='on') => { const e=$(id); if(e) e.classList.remove(cls); };
+const vis = (id) => { const e=$(id); if(e){ e.classList.add('vis'); e.style.opacity=''; } };
+const hid = (id) => { const e=$(id); if(e){ e.classList.remove('vis'); } };
+const setOp = (id, v, dur='') => { const e=$(id); if(!e)return; if(dur) e.style.transition=`opacity ${dur}`; e.style.opacity=v; };
 
-/* ── EL helpers ── */
-const el = id => document.getElementById(id);
-const show  = id => el(id) && el(id).classList.add('show');
-const unshow = id => el(id) && el(id).classList.remove('show');
-const showClass = (id,cls) => el(id) && el(id).classList.add(cls);
+/* ── Stagger helper (for bidirectional) ── */
+let staggerTimers = [];
+function clearTimers(){ staggerTimers.forEach(clearTimeout); staggerTimers=[]; }
+function after(fn, ms){ staggerTimers.push(setTimeout(fn,ms)); }
 
-/* ── Delay helper ── */
-const delay = (fn, ms) => setTimeout(fn, ms);
+/* ═══════════════════════════════════════
+   DECLARATIVE STATE MACHINE
+   applyScene(n) fully sets the visual state
+   for scene n — works in both directions.
+═══════════════════════════════════════ */
+function applyScene(n){
+  clearTimers();
 
-/* ════════════════════════════════════════════
-   SCENE INITIALIZERS (called once on entry)
-════════════════════════════════════════════ */
+  /* ── HUD ── */
+  $('hud-scene').textContent = `SCENE ${n} / ${SCENES.length-1}`;
+  $('hud-name').textContent = SCENES[n]?.name || 'CONTACT';
+  $('hud').className = n >= 2 ? 'light' : '';
+  $('scroll-hint').style.opacity = n < 2 ? '1' : '0';
+  $('progress-bar').style.width = (getProgress()*100)+'%';
 
-function initS0(){
-  // Dark screen with grain — no action needed
-}
+  /* ── BG + GRID ── */
+  $('bg').style.opacity = n >= 2 ? '1' : '0';
+  $('grid').style.opacity = n >= 2 ? '1' : '0';
 
-function initS1(){
-  // Fade in terminal lines sequentially
-  const lines = ['tl0','tl1','tl2','tl3','tl4','tl5'];
-  lines.forEach((id,i) => {
-    delay(() => {
-      const e = el(id);
-      if(e){ e.style.opacity='1'; e.style.transform='translateY(0)'; }
-    }, 300 + i * 380);
-  });
-}
+  /* ──────────────────────────────────
+     VOID  (scene 0)
+  ────────────────────────────────── */
+  if(n===0){
+    vis('s-void'); hid('s-boot'); hid('s-id'); hid('s-exit');
+    setOp('map-canvas','0'); $('map-canvas').className='zoom-in';
+    off('focus-panel'); off('foundation'); off('blog-layer'); off('think-layer');
+    ['tl0','tl1','tl2','tl3','tl4','tl5'].forEach(id=>off(id));
+    off('id-rings'); off('id-name'); off('id-sub'); ['o-ml','o-sec','o-sys','o-nlp'].forEach(off);
+    return;
+  } else { hid('s-void'); }
 
-function initS2(){
-  delay(() => showClass('rings-wrap','show'), 200);
-  delay(() => showClass('id-name-wrap','show'), 500);
-  delay(() => showClass('id-sub','show'), 900);
-  delay(() => {
-    ['ol-ml','ol-sec','ol-sys','ol-nlp'].forEach((id,i) => {
-      delay(() => show(id), i * 180);
+  /* ──────────────────────────────────
+     BOOT  (scene 1)
+  ────────────────────────────────── */
+  if(n===1){
+    vis('s-boot'); hid('s-id'); hid('s-exit');
+    setOp('map-canvas','0'); $('map-canvas').className='zoom-in';
+    off('id-rings'); off('id-name'); off('id-sub'); ['o-ml','o-sec','o-sys','o-nlp'].forEach(off);
+    off('focus-panel'); off('foundation'); off('blog-layer'); off('think-layer');
+    // Stagger terminal lines
+    ['tl0','tl1','tl2','tl3','tl4','tl5'].forEach((id,i)=>{
+      off(id);
+      after(()=>on(id), i*320);
     });
-  }, 700);
-}
+    return;
+  } else { hid('s-boot'); ['tl0','tl1','tl2','tl3','tl4','tl5'].forEach(id=>off(id)); }
 
-function initS3(){
-  // Begin showing map canvas with zoom-in scale
-  el('map-canvas').style.opacity = '0';
-  el('map-canvas').style.transform = 'scale(1.35)';
-  el('map-canvas').style.transition = 'opacity 1s ease, transform 1.5s cubic-bezier(0.16,1,0.3,1)';
-  el('bg').style.opacity = '1';
-  el('grid').style.opacity = '1';
-  delay(() => {
-    mapVisible = true;
-    el('map-canvas').style.opacity = '1';
-    el('map-canvas').style.transform = 'scale(1)';
-  }, 150);
-  delay(() => show('core-label'), 600);
-}
+  /* ──────────────────────────────────
+     IDENTITY  (scene 2)
+  ────────────────────────────────── */
+  if(n===2){
+    vis('s-id'); hid('s-exit');
+    setOp('map-canvas','0'); $('map-canvas').className='zoom-in';
+    off('focus-panel'); off('foundation'); off('blog-layer'); off('think-layer');
+    // Rings + name
+    off('id-rings'); off('id-name'); off('id-sub');
+    ['o-ml','o-sec','o-sys','o-nlp'].forEach(off);
+    after(()=>on('id-rings'), 100);
+    after(()=>on('id-name'), 400);
+    after(()=>on('id-sub'), 900);
+    after(()=>{ ['o-ml','o-sec','o-sys','o-nlp'].forEach((id,i)=>after(()=>on(id),i*180)); }, 700);
+    return;
+  } else { hid('s-id'); off('id-rings'); off('id-name'); off('id-sub'); ['o-ml','o-sec','o-sys','o-nlp'].forEach(off); }
 
-function initS4(){
-  // Animate connector lines
-  ['c-foca','c-decker','c-gocoma','c-coral','cx-hyp'].forEach((id,i) => {
-    delay(() => {
-      const e = el(id); if(e) e.classList.add('drawn');
-    }, i * 220);
-  });
-  // Show nodes with stagger
-  const nodeIds = ['n-foca','n-decker','n-gocoma','n-coral'];
-  nodeIds.forEach((id,i) => {
-    delay(() => {
-      const e = el(id); if(e) e.classList.add('shown');
-    }, 300 + i * 220);
-  });
-  // Show annotations
-  ['ann1','ann2','ann3','ann4','ann5','ann6'].forEach((id,i) => {
-    delay(() => show(id), 800 + i * 200);
-  });
-}
-
-function initS5(){
-  // Focus on FOCA as primary (can be data-driven)
-  show('focus-panel');
-  const nodeIds = ['n-decker','n-gocoma','n-coral'];
-  nodeIds.forEach(id => {
-    const e = el(id); if(e) e.classList.add('dimmed');
-  });
-  // Stagger reveal of fp rows
-  ['fp-r0','fp-r1','fp-r2','fp-r3'].forEach((id,i) => {
-    delay(() => show(id), 300 + i * 160);
-  });
-}
-
-function deinitS5(){
-  unshow('focus-panel');
-  ['n-decker','n-gocoma','n-coral'].forEach(id => {
-    const e = el(id); if(e) e.classList.remove('dimmed');
-  });
-  ['fp-r0','fp-r1','fp-r2','fp-r3'].forEach(id => unshow(id));
-}
-
-function initS6(){
-  // Draw cross-connectors
-  ['cx-dom','cx-ml','cx-sec'].forEach((id,i) => {
-    delay(() => {
-      const e = el(id); if(e) e.style.strokeDashoffset = '0';
-    }, i * 300);
-  });
-  // Show concept pills
-  ['cp1','cp2','cp3','cp4','cp5','cp6'].forEach((id,i) => {
-    delay(() => show(id), 200 + i * 150);
-  });
-}
-
-function deinitS6(){
-  ['cp1','cp2','cp3','cp4','cp5','cp6'].forEach(id => unshow(id));
-}
-
-function initS7(){
-  showClass('foundation','show');
-  const fdIds = ['fd0','fd1','fd2','fd3','fd4','fd5','fd6','fd7','fd8'];
-  fdIds.forEach((id,i) => delay(() => show(id), 300 + i*120));
-  const skIds = ['sk0','sk1','sk2','sk3','sk4','sk5','sk6','sk7','sk8','sk9','sk10','sk11','sk12'];
-  skIds.forEach((id,i) => delay(() => show(id), 600 + i*80));
-}
-
-function deinitS7(){
-  const e = el('foundation');
-  if(e){ e.classList.remove('show'); }
-}
-
-function initS8(){
-  showClass('thinking-layer','show');
-  // Reveal notes with stagger + jitter
-  ['tn0','tn1','tn2','tn3','tn4','tn5'].forEach((id,i) => {
-    delay(() => show(id), 200 + i*220);
-  });
-  // Draw arrows
-  ['ta1','ta2','ta3','ta4'].forEach((id,i) => {
-    delay(() => {
-      const e = el(id); if(e) e.classList.add('draw');
-    }, 400 + i*200);
-  });
-}
-
-function deinitS8(){
-  const e = el('thinking-layer');
-  if(e) e.classList.remove('show');
-  ['tn0','tn1','tn2','tn3','tn4','tn5'].forEach(id => unshow(id));
-  ['ta1','ta2','ta3','ta4'].forEach(id => {
-    const e = el(id); if(e) e.classList.remove('draw');
-  });
-}
-
-function initS9(){
-  ['el0','el1','el2','el3','el4','el5'].forEach((id,i) => {
-    delay(() => show(id), 200 + i*350);
-  });
-  delay(() => showClass('contact-links','show'), 2200);
-}
-
-/* ════════════════════════════════════════════
-   SCENE VISIBILITY CONTROLLER
-════════════════════════════════════════════ */
-
-const sceneInitFns = { s0:initS0, s1:initS1, s2:initS2, s3:initS3, s4:initS4, s5:initS5, s6:initS6, s7:initS7, s8:initS8, s9:initS9 };
-const sceneDeInitFns = { s5:deinitS5, s6:deinitS6, s7:deinitS7, s8:deinitS8 };
-
-function setSceneVisibility(activeName, p){
-  const sceneIdx = Object.keys(scenes).indexOf(activeName);
-
-  // Progress bar
-  el('progress-bar').style.width = (p*100)+'%';
-
-  // Scene counter
-  const counter = el('scene-counter');
-  if(counter){
-    counter.textContent = `SCENE ${sceneIdx} / 9 — ${sceneNames[sceneIdx]}`;
-    counter.className = sceneIdx >= 2 ? 'light' : '';
+  /* ──────────────────────────────────
+     SYSTEM ZOOM  (scene 3)
+  ────────────────────────────────── */
+  if(n===3){
+    hid('s-exit');
+    $('map-canvas').className='zoom-in';
+    $('map-canvas').style.transition='opacity .9s ease, transform 1.4s cubic-bezier(.16,1,.3,1)';
+    after(()=>{ setOp('map-canvas','1'); $('map-canvas').className='zoom-normal'; }, 80);
+    after(()=>on('core'), 600);
+    off('focus-panel'); off('foundation'); off('blog-layer'); off('think-layer');
+    // Hide nodes + connectors
+    PROJECTS.forEach(p=>off('node-'+p.id));
+    ['c0','c1','c2','c3','cx0','cx1','cx2','cx3'].forEach(id=>off(id,'on'));
+    ['a0','a1','a2','a3','a4','a5'].forEach(off);
+    ['cp0','cp1','cp2','cp3','cp4','cp5'].forEach(off);
+    return;
   }
 
-  // S0 — void screen
-  const s0 = el('s0');
-  s0.style.opacity = sceneIdx < 1 ? '1' : '0';
-  s0.style.pointerEvents = sceneIdx < 1 ? 'auto' : 'none';
+  /* Map always visible from scene 3+ */
+  setOp('map-canvas','1'); $('map-canvas').className='zoom-normal';
 
-  // S1 — terminal
-  const s1 = el('s1');
-  const s1vis = sceneIdx === 1;
-  s1.style.opacity = s1vis ? '1' : (sceneIdx === 0 ? '0' : '0');
-  s1.style.pointerEvents = s1vis ? 'auto' : 'none';
+  /* ──────────────────────────────────
+     NODES  (scene 4)
+  ────────────────────────────────── */
+  if(n===4){
+    hid('s-exit');
+    on('core');
+    // Connectors
+    ['c0','c1','c2','c3'].forEach(id=>off(id,'on'));
+    ['cx0','cx1','cx2','cx3'].forEach(id=>off(id,'on'));
+    ['c0','c1','c2','c3'].forEach((id,i)=>after(()=>on(id,'on'),i*200));
+    // Nodes
+    PROJECTS.forEach(p=>off('node-'+p.id));
+    PROJECTS.forEach((p,i)=>after(()=>on('node-'+p.id),280+i*220));
+    // Annotations
+    ['a0','a1','a2','a3','a4','a5'].forEach(off);
+    ['a0','a1','a2','a3','a4','a5'].forEach((id,i)=>after(()=>on(id),700+i*200));
+    // Pills off
+    ['cp0','cp1','cp2','cp3','cp4','cp5'].forEach(off);
+    off('focus-panel');
+    // Nodes not dimmed
+    PROJECTS.forEach(p=>{ const e=$('node-'+p.id); if(e) e.classList.remove('dim'); });
+    off('foundation'); off('blog-layer'); off('think-layer');
+    return;
+  }
 
-  // S2 — identity (fades out as S3 comes in)
-  const s2 = el('s2');
-  if(sceneIdx === 2){
-    const sp = sceneProgress('s2',p);
-    s2.style.opacity = sp < 0.7 ? '1' : (1 - (sp-0.7)/0.3).toString();
+  /* Ensure nodes visible & connected from here */
+  ['c0','c1','c2','c3'].forEach(id=>on(id,'on'));
+  PROJECTS.forEach(p=>on('node-'+p.id));
+  ['a0','a1','a2','a3','a4','a5'].forEach(on);
+
+  /* ──────────────────────────────────
+     FOCUS  (scene 5)
+  ────────────────────────────────── */
+  if(n===5){
+    hid('s-exit');
+    // Dim all nodes, spotlight FOCA
+    const focus = PROJECTS[0];
+    PROJECTS.forEach(p=>{
+      const e=$('node-'+p.id);
+      if(!e)return;
+      if(p.id===focus.id) e.classList.remove('dim');
+      else e.classList.add('dim');
+    });
+    // Populate focus panel
+    $('fp-title').innerHTML=`<em>${focus.title}</em>`;
+    $('fp-prob').textContent=focus.focus.problem;
+    $('fp-appr').textContent=focus.focus.approach;
+    $('fp-res').textContent=focus.focus.result;
+    $('fp-open').textContent=focus.focus.open;
+    // Show panel & stagger rows
+    on('focus-panel');
+    ['fp-r0','fp-r1','fp-r2','fp-r3'].forEach(off);
+    ['fp-r0','fp-r1','fp-r2','fp-r3'].forEach((id,i)=>after(()=>on(id),200+i*160));
+    ['cp0','cp1','cp2','cp3','cp4','cp5'].forEach(off);
+    off('foundation'); off('blog-layer'); off('think-layer');
+    return;
   } else {
-    s2.style.opacity = sceneIdx < 2 ? '0' : '0';
-  }
-  s2.style.pointerEvents = sceneIdx===2 ? 'auto':'none';
-
-  // MAP CANVAS — visible in scenes 3–8
-  const mapvis = sceneIdx >= 3 && sceneIdx <= 8;
-  if(!mapvis && mapVisible && sceneIdx !== 3){
-    el('map-canvas').style.opacity = '0';
-    mapVisible = false;
+    off('focus-panel');
+    PROJECTS.forEach(p=>{ const e=$('node-'+p.id); if(e) e.classList.remove('dim'); });
   }
 
-  // BG + GRID
-  const bgVis = sceneIdx >= 2;
-  el('bg').style.opacity = bgVis ? '1' : '0';
-  el('grid').style.opacity = bgVis ? '1' : '0';
+  /* ──────────────────────────────────
+     CONNECTIONS  (scene 6)
+  ────────────────────────────────── */
+  if(n===6){
+    hid('s-exit');
+    ['cx0','cx1','cx2','cx3'].forEach(id=>off(id,'on'));
+    ['cx0','cx1','cx2','cx3'].forEach((id,i)=>after(()=>on(id,'on'),i*280));
+    ['cp0','cp1','cp2','cp3','cp4','cp5'].forEach(off);
+    ['cp0','cp1','cp2','cp3','cp4','cp5'].forEach((id,i)=>after(()=>on(id),200+i*160));
+    off('foundation'); off('blog-layer'); off('think-layer');
+    return;
+  } else { ['cx0','cx1','cx2','cx3'].forEach(id=>off(id,'on')); ['cp0','cp1','cp2','cp3','cp4','cp5'].forEach(off); }
 
-  // S9 — terminal exit
-  const s9 = el('s9');
-  s9.style.opacity = sceneIdx === 9 ? '1' : '0';
-  s9.style.pointerEvents = sceneIdx===9 ? 'auto':'none';
-
-  // Scroll hint
-  const sh = el('scroll-hint');
-  if(sh) sh.style.opacity = sceneIdx < 2 ? '1' : '0';
-
-  // Map canvas zoom per scene
-  if(mapVisible && sceneIdx === 3){
-    const sp = sceneProgress('s3',p);
-    // scale slightly up as user scrolls into scene 3
-    const sc = 1 + sp * 0.12;
-    el('map-canvas').style.transform = `scale(${sc})`;
-  } else if(mapVisible && sceneIdx === 4){
-    el('map-canvas').style.transform = 'scale(1)';
-    el('map-canvas').style.transition = 'transform 0.8s ease';
+  /* ──────────────────────────────────
+     FOUNDATION  (scene 7)
+  ────────────────────────────────── */
+  if(n===7){
+    hid('s-exit');
+    on('foundation');
+    off('blog-layer'); off('think-layer');
+    // Stagger fd-items
+    const fdItems = document.querySelectorAll('#foundation .fd-item[id]');
+    fdItems.forEach(e=>e.classList.remove('on'));
+    fdItems.forEach((e,i)=>after(()=>e.classList.add('on'),200+i*110));
+    // Skills
+    const sks = document.querySelectorAll('.sk');
+    sks.forEach(e=>e.classList.remove('on'));
+    sks.forEach((e,i)=>after(()=>e.classList.add('on'),400+i*60));
+    // Pub items
+    const pubs = document.querySelectorAll('[data-pub]');
+    pubs.forEach(e=>e.classList.remove('on'));
+    pubs.forEach((e,i)=>after(()=>e.classList.add('on'),300+i*130));
+    return;
+  } else {
+    off('foundation');
+    document.querySelectorAll('#foundation .fd-item[id]').forEach(e=>e.classList.remove('on'));
+    document.querySelectorAll('.sk').forEach(e=>e.classList.remove('on'));
+    document.querySelectorAll('[data-pub]').forEach(e=>e.classList.remove('on'));
   }
+
+  /* ──────────────────────────────────
+     BLOG  (scene 8)
+  ────────────────────────────────── */
+  if(n===8){
+    hid('s-exit');
+    on('blog-layer');
+    off('think-layer');
+    // Featured
+    off('blog-feat'); after(()=>on('blog-feat'),150);
+    // List items
+    const items = document.querySelectorAll('.blog-item');
+    items.forEach(e=>e.classList.remove('on'));
+    items.forEach((e,i)=>after(()=>e.classList.add('on'),300+i*160));
+    return;
+  } else {
+    off('blog-layer');
+    off('blog-feat');
+    document.querySelectorAll('.blog-item').forEach(e=>e.classList.remove('on'));
+  }
+
+  /* ──────────────────────────────────
+     THINKING  (scene 9)
+  ────────────────────────────────── */
+  if(n===9){
+    hid('s-exit');
+    on('think-layer');
+    // Arrows
+    ['ta0','ta1','ta2','ta3'].forEach(id=>off(id,'on'));
+    ['ta0','ta1','ta2','ta3'].forEach((id,i)=>after(()=>on(id,'on'),300+i*200));
+    // Notes
+    ['tn0','tn1','tn2','tn3','tn4','tn5'].forEach(off);
+    ['tn0','tn1','tn2','tn3','tn4','tn5'].forEach((id,i)=>after(()=>on(id),180+i*220));
+    return;
+  } else {
+    off('think-layer');
+    ['tn0','tn1','tn2','tn3','tn4','tn5'].forEach(off);
+    ['ta0','ta1','ta2','ta3'].forEach(id=>off(id,'on'));
+  }
+
+  /* ──────────────────────────────────
+     CONTACT  (scene 10)
+  ────────────────────────────────── */
+  if(n===10){
+    hid('s-void'); hid('s-boot'); hid('s-id');
+    vis('s-exit');
+    setOp('map-canvas','0');
+    off('think-layer'); off('blog-layer'); off('foundation');
+    ['el0','el1','el2','el3','el4','el5'].forEach(off);
+    off('ct-links','on');
+    ['el0','el1','el2','el3','el4','el5'].forEach((id,i)=>after(()=>on(id),200+i*340));
+    after(()=>on('ct-links','on'),2200);
+    return;
+  } else { hid('s-exit'); ['el0','el1','el2','el3','el4','el5'].forEach(off); off('ct-links','on'); }
 }
 
-/* ════════════════════════════════════════════
-   MAIN SCROLL HANDLER
-════════════════════════════════════════════ */
-function onScroll(){
-  const p = getProgress();
-  const sceneName = getScene(p);
-  const sceneIdx = Object.keys(scenes).indexOf(sceneName);
-
-  setSceneVisibility(sceneName, p);
-
-  // Init scene once on entry
-  if(sceneIdx !== lastScene){
-    // Deinit previous if applicable
-    const prevName = Object.keys(scenes)[lastScene];
-    if(prevName && sceneDeInitFns[prevName]) sceneDeInitFns[prevName]();
-
-    // Init current
-    if(!inited[sceneName] && sceneInitFns[sceneName]){
-      inited[sceneName] = true;
-      sceneInitFns[sceneName]();
-    }
-    lastScene = sceneIdx;
-  }
-}
-
-window.addEventListener('scroll', onScroll, { passive:true });
-
-/* ════════════════════════════════════════════
-   NODE HOVER — subtle floating animation
-════════════════════════════════════════════ */
-let animFrame;
+/* ═══════════════════════════════════════
+   NODE FLOAT ANIMATION
+═══════════════════════════════════════ */
 function floatNodes(){
-  const t = Date.now() / 1000;
-  const nodes = [
-    {id:'n-foca', amp:3, freq:0.6, phase:0},
-    {id:'n-decker', amp:2.5, freq:0.5, phase:1.2},
-    {id:'n-gocoma', amp:3, freq:0.55, phase:2.4},
-    {id:'n-coral', amp:2, freq:0.65, phase:0.8},
-  ];
-  nodes.forEach(({id, amp, freq, phase}) => {
-    const e = el(id);
-    if(!e || e.matches(':hover')) return;
-    const y = Math.sin(t * freq + phase) * amp;
-    if(!e.classList.contains('dimmed')){
-      e.style.transform = `translateY(${y}px)`;
-    }
+  const t = Date.now()/1000;
+  PROJECTS.forEach(({id}, i) => {
+    const e = $('node-'+id);
+    if(!e || e.matches(':hover') || e.classList.contains('dim')) return;
+    const y = Math.sin(t*0.55 + i*1.3) * 3;
+    e.style.transform = `translateY(${y}px)`;
   });
-  animFrame = requestAnimationFrame(floatNodes);
+  requestAnimationFrame(floatNodes);
 }
 floatNodes();
 
-/* ════════════════════════════════════════════
-   INITIAL STATE
-════════════════════════════════════════════ */
-window.scrollTo(0, 0);
-initS0();
-el('s0').style.opacity = '1';
-el('scene-counter').textContent = 'SCENE 0 / 9 — VOID';
+/* ═══════════════════════════════════════
+   SCROLL LOOP — single rAF, debounced
+═══════════════════════════════════════ */
+let currentScene = -1;
+let rafPending = false;
+
+function tick(){
+  rafPending = false;
+  const p = getProgress();
+  $('progress-bar').style.width = (p*100)+'%';
+  const n = getSceneId(p);
+  if(n !== currentScene){
+    currentScene = n;
+    applyScene(n);
+  }
+}
+
+window.addEventListener('scroll', ()=>{
+  if(!rafPending){ rafPending=true; requestAnimationFrame(tick); }
+}, {passive:true});
+
+/* ─── INIT ─── */
+window.scrollTo(0,0);
+applyScene(0);
 </script>
 </body>
 </html>
