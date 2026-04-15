@@ -574,7 +574,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9998;pointer-events:none;o
 
   <!-- film-strip side tapes -->
   <div class="side-tape" id="tape-left">
-    <span class="tape-text">VIKRANT VIKRAM · RESEARCH NODE · 2025</span>
+    <span class="tape-text">VIKRANT VIKRAM · RESEARCH NODE · 2026</span>
   </div>
   <div class="side-tape right" id="tape-right">
     <span class="tape-text">NEURAL AUTOPSY · TLP:WHITE · SYS:ONLINE</span>
@@ -617,7 +617,7 @@ body::after{content:'';position:fixed;inset:0;z-index:9998;pointer-events:none;o
 
   <!-- identity + role band -->
   <div class="hero-meta-band">
-    <div class="meta-role">Security &amp; AI · PhD Applicant · 2025</div>
+    <div class="meta-role">Security &amp; AI · PhD Applicant · 2026</div>
     <div class="meta-tags" id="meta-tags"></div>
     <div class="enter-cue"><div class="ec-line"></div><span>scroll</span></div>
   </div>
@@ -710,18 +710,18 @@ body::after{content:'';position:fixed;inset:0;z-index:9998;pointer-events:none;o
 const D = {
   tags:['Multimodal ML','Hyperbolic Geom.','Security','Side-Channel','NLP','LLMs','Adversarial ML'],
   projects:[
+    {title:'GoCoMA',venue:'ICME 2026',desc:'Hyperbolic multimodal fusion for attributing LLM-generated code to authorship and model families.',tags:['LLMs','code intel','attribution'],detail:{problem:'LLM code attribution is confounded by style-mixing and adversarial obfuscation.',approach:'Multimodal fusion of AST, token sequences and semantic embeddings in hyperbolic space.',result:'Accepted ICME 2026. Outperforms flat-space baselines across 12 LLM families.',open:'Does attribution survive adversarial prompt-level obfuscation?'}},
     {title:'FOCA',venue:'ICASSP 2026',desc:'Hyperbolic cross-attention for multimodal malware classification across heterogeneous environments.',tags:['multimodal','hyperbolic','malware'],detail:{problem:'How to robustly classify malware across heterogeneous execution environments?',approach:'Hyperbolic cross-attention over multimodal signals — behavioral, static and dynamic traces fused in curved space.',result:'Accepted ICASSP 2026. State-of-the-art on cross-environment malware benchmarks.',open:'Does hyperbolic curvature need per-domain tuning at inference time?'}},
     {title:'DECKER',venue:'AsiaCCS 2026',desc:'Domain-invariant embeddings for cross-device acoustic keystroke recognition via audio side-channel.',tags:['audio ML','side-channel','domain shift'],detail:{problem:'Acoustic side-channel attacks degrade on unseen keyboard hardware.',approach:'Domain-invariant embedding space trained with adversarial domain alignment and contrastive loss.',result:'Accepted AsiaCCS 2026. Robust cross-device transfer without target-domain samples.',open:'Can zero-shot transfer extend to non-keyboard surfaces?'}},
-    {title:'GoCoMA',venue:'ICME 2026',desc:'Hyperbolic multimodal fusion for attributing LLM-generated code to authorship and model families.',tags:['LLMs','code intel','attribution'],detail:{problem:'LLM code attribution is confounded by style-mixing and adversarial obfuscation.',approach:'Multimodal fusion of AST, token sequences and semantic embeddings in hyperbolic space.',result:'Accepted ICME 2026. Outperforms flat-space baselines across 12 LLM families.',open:'Does attribution survive adversarial prompt-level obfuscation?'}},
     {title:'CORAL',venue:'AACL-IJCNLP 2025',desc:'Socially-aware deception detection using positive–unlabeled learning over conversational structure.',tags:['NLP','PU learning','deception'],detail:{problem:'Ground-truth deception labels are sparse; most conversational data is unlabeled.',approach:'Positive–unlabeled learning over social graph structure; models role dynamics as features.',result:'Accepted AACL-IJCNLP 2025. Significant gains over fully-supervised baselines.',open:'How does the model behave when social structure is adversarially manipulated?'}}
   ],
   publications:[
     {year:'2026',title:'FOCA: Multimodal Malware Classification via Hyperbolic Cross-Attention',venue:'ICASSP 2026'},
     {year:'2026',title:'DECKER: Domain-invariant Embedding for Cross-Keyboard Acoustic Extraction',venue:'AsiaCCS 2026'},
     {year:'2026',title:'GoCoMA: Hyperbolic Multimodal Representation Fusion for Code Attribution',venue:'ICME 2026'},
-    {year:'2025',title:'CORAL: Socially-Aware Deception Detection via Positive-Unlabeled Learning',venue:'AACL-IJCNLP 2025'}
+    {year:'2025',title:'CORAL: Socially-Aware Deception Detection via Positive-Unlabeled Learning',venue:'AACL-IJCNLP (Workshop) 2025'}
   ],
-  education:{degree:'B.Tech CS',years:'2020 — 2024',courses:['Machine Learning','Deep Learning','System Security','Cryptography','NLP','Algorithms','OS Design','Data Structures','Computer Networks','Linear Algebra']},
+  education:{degree:'M.Tech CS',years:'2024 — 2026',courses:['Machine Learning','Deep Learning','System Security','Cryptography','NLP','Algorithms','OS Design','Data Structures','Computer Networks','Linear Algebra']},
   skills:{'Machine Learning':{items:['PyTorch','Transformers','HuggingFace','hyperbolic geom.','multimodal fusion'],core:[0,1]},'Security':{items:['malware analysis','side-channel','adversarial ML','binary analysis'],core:[0,2]},'Programming':{items:['Python','C/C++','CUDA','LaTeX','Bash'],core:[0,1]},'Systems':{items:['Linux','Docker','SLURM','dist. training'],core:[]}},
   blog:[
     {featured:true,tag:'Apr 2025 · 14 min',title:'Why Hyperbolic Geometry Makes Security Taxonomies Better',excerpt:'Flat embedding spaces assume equidistant relationships. Security malware families are hierarchical — and Euclidean space punishes that assumption silently.',full:'The core insight is that security taxonomies are trees. APT families branch. Malware genera subdivide. When you embed a tree in a sphere, you can represent exponentially more nodes — hyperbolic space grows at the boundary, not the center. The Poincaré disk model gives you exactly this: distance from origin encodes generality, angular position encodes category. When we replaced the flat classifier in FOCA with a hyperbolic attention module, the gains were consistent and reproducible. The geometry was doing semantic work the data could not do alone.'},
@@ -738,9 +738,9 @@ const D = {
     {key:'next dir.',text:'Causal reasoning over behavioral traces — moving beyond correlation toward mechanism.'}
   ],
   contact:[
-    {key:'email',val:'vikrant@proton.me',href:'mailto:vikrant@proton.me'},
+    {key:'email',val:'bikrant.acc.edu@icloud.com',href:'mailto:bikrant.acc.edu@icloud.com'},
     {key:'linkedin',val:'vikrant-vikram-a07418185',href:'https://linkedin.com/in/vikrant-vikram-a07418185'},
-    {key:'github',val:'github/vikrant-v',href:'https://github.com/vikrant-v'},
+    {key:'github',val:'github/vikrant-vikram',href:'https://github.com/vikrant-vikram'},
     {key:'signal',val:'on request',href:null}
   ]
 };
@@ -995,7 +995,7 @@ function build(){
   });
   document.getElementById('found').innerHTML=`
     <div class="fl">
-      <div class="edu-big rv">B.<em>Tech</em><br>CS</div>
+      <div class="edu-big rv">M.<em>Tech</em><br>CS</div>
       <div class="edu-yr rv d2">${D.education.years}</div>
       <div class="courses rv d3">${D.education.courses.map(c=>`<span class="crs">${c}</span>`).join('')}</div>
     </div>
