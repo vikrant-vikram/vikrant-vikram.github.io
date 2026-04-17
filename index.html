@@ -3,1205 +3,1031 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>VIKRANT VIKRAM — Research Cartography</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<title>Vikrant Vikram — Security Research</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,700&family=Space+Mono:ital,wght@0,400;0,700&display=swap" rel="stylesheet">
 <style>
-/* ═══════════════ TOKENS ═══════════════ */
-:root{
-  --p0:#F7F2E8;--p1:#EFE8D5;--p2:#E7DDBF;--p3:#DCCFA8;--p4:#CFC09A;
-  --ink:#1A1710;--ink2:rgba(26,23,16,.58);--ink3:rgba(26,23,16,.28);--ink4:rgba(26,23,16,.1);
-  --grid:rgba(26,23,16,.07);--grid2:rgba(26,23,16,.04);
-  --teal:#1B6B6B;--teal2:rgba(27,107,107,.14);--teal3:rgba(27,107,107,.06);
-  --rust:#8B3A1A;--rust2:rgba(139,58,26,.12);
-  --gold:#7A5C14;--gold2:rgba(122,92,20,.18);
-  --navy:#1A2B4A;--navy2:rgba(26,43,74,.1);
-  --bebas:'Bebas Neue',sans-serif;
-  --serif:'Cormorant Garamond',Georgia,serif;
-  --mono:'Space Mono',monospace;
-  --spring:cubic-bezier(.16,1,.3,1);
-}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{overflow-x:hidden;scroll-behavior:smooth}
-body{background:var(--p0);color:var(--ink);font-family:var(--mono);cursor:none;overflow-x:hidden}
+html,body{height:100%;width:100%;overflow-x:hidden}
+body{background:#030303;color:#EDE8DF;font-family:'Space Mono',monospace;-webkit-font-smoothing:antialiased}
 
-/* ═══════════════ CURSOR — drafting compass ═══════════════ */
-#CUR{position:fixed;z-index:99999;pointer-events:none;top:0;left:0}
-#Cpt{position:absolute;width:3px;height:3px;border-radius:50%;background:var(--teal);transform:translate(-50%,-50%)}
-#Ccircle{
-  position:absolute;width:28px;height:28px;border-radius:50%;
-  border:1px solid rgba(27,107,107,.45);
-  transform:translate(-50%,-50%);
-  transition:width .3s var(--spring),height .3s var(--spring),border-color .3s;
+#c{position:fixed;inset:0;z-index:1}
+
+#scroll-space{position:relative;z-index:2;pointer-events:none;height:700vh}
+
+#dom-bottom{position:relative;z-index:3;background:#030303}
+
+#boot{
+  position:fixed;inset:0;z-index:50;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:#030303;pointer-events:none;
+  transition:opacity 1s ease 0.3s;
 }
-#Ch{position:absolute;width:20px;height:1px;background:rgba(27,107,107,.35);transform:translate(-50%,-50%)}
-#Cv{position:absolute;width:1px;height:20px;background:rgba(27,107,107,.35);transform:translate(-50%,-50%)}
-#Clag{position:absolute;width:6px;height:6px;border-radius:50%;border:1px solid rgba(27,107,107,.25);transform:translate(-50%,-50%);transition:transform .18s linear}
-
-/* ═══════════════ GRAIN ═══════════════ */
-body::after{
-  content:'';position:fixed;inset:0;z-index:9990;pointer-events:none;
-  opacity:.45;mix-blend-mode:multiply;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.78' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23f)' opacity='.07'/%3E%3C/svg%3E");
-  background-size:175px;
+#boot.done{opacity:0;pointer-events:none}
+#boot-lines{font-size:clamp(9px,1vw,11px);letter-spacing:.18em;line-height:2.4;color:rgba(237,232,223,.45);text-align:left;max-width:400px}
+#boot-lines span{display:block;opacity:0;transform:translateX(-8px);transition:opacity .35s ease,transform .35s ease}
+#boot-lines span.show{opacity:1;transform:translateX(0)}
+#boot-name{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:700;
+  font-size:clamp(28px,5vw,52px);letter-spacing:-.02em;
+  color:#EDE8DF;margin-top:clamp(20px,4vh,36px);
+  opacity:0;transition:opacity .8s ease;
 }
+#boot-name.show{opacity:1}
 
-/* ═══════════════ PROGRESS — left edge rule ═══════════════ */
-#rule{position:fixed;left:0;top:0;bottom:0;width:3px;background:var(--grid);z-index:9800}
-#ruleFill{position:absolute;top:0;left:0;right:0;height:0;background:var(--teal);transition:height .1s linear}
-#rulePct{
-  position:fixed;left:10px;bottom:clamp(14px,2.5vh,24px);
-  font-size:7px;letter-spacing:.22em;color:var(--ink3);z-index:9801;
-  writing-mode:vertical-rl;transform:rotate(180deg);
-}
-
-/* ═══════════════ CANVAS ═══════════════ */
-#bgC{position:fixed;inset:0;z-index:1;pointer-events:none}
-
-/* ═══════════════════════════════════════════════
-   HERO — SURVEY MAP
-═══════════════════════════════════════════════ */
-#hero{
-  min-height:100svh;position:relative;overflow:hidden;z-index:10;
-  background:var(--p0);
-}
-
-/* Blueprint grid overlay */
-#hero::before{
-  content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
-  background-image:
-    linear-gradient(var(--grid) 1px,transparent 1px),
-    linear-gradient(90deg,var(--grid) 1px,transparent 1px),
-    linear-gradient(var(--grid2) 1px,transparent 1px),
-    linear-gradient(90deg,var(--grid2) 1px,transparent 1px);
-  background-size:80px 80px,80px 80px,20px 20px,20px 20px;
-}
-
-/* Compass rose canvas lives inside hero */
-#compassC{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
-
-/* COORDINATE ANNOTATIONS */
-.coord{
-  position:absolute;font-family:var(--mono);font-size:clamp(7px,.75vw,8.5px);
-  letter-spacing:.18em;color:var(--ink3);pointer-events:none;z-index:3;
-}
-.coord-n{top:clamp(10px,2vh,18px);left:50%;transform:translateX(-50%)}
-.coord-s{bottom:clamp(10px,2vh,18px);left:50%;transform:translateX(-50%)}
-.coord-e{right:clamp(10px,2vw,18px);top:50%;transform:translateY(-50%);writing-mode:vertical-rl}
-.coord-w{left:clamp(28px,3vw,36px);top:50%;transform:translateY(-50%);writing-mode:vertical-rl;transform:translateY(-50%) rotate(180deg)}
-
-/* TICK MARKS along edges */
-.tick-row{position:absolute;left:0;right:0;display:flex;justify-content:space-evenly;pointer-events:none;z-index:3}
-.tick-row.top{top:0}.tick-row.bottom{bottom:0}
-.tick{width:1px;height:clamp(6px,1vh,10px);background:var(--ink3);opacity:.4}
-.tick-col{position:absolute;top:0;bottom:0;display:flex;flex-direction:column;justify-content:space-evenly;pointer-events:none;z-index:3}
-.tick-col.left{left:clamp(20px,2.5vw,30px)}.tick-col.right{right:clamp(4px,1vw,8px)}
-.tick-v{height:1px;width:clamp(6px,1vh,10px);background:var(--ink3);opacity:.4}
-
-/* ─── HERO TOP BAR ─── */
-.hero-topbar{
-  position:absolute;top:0;left:0;right:0;z-index:5;
-  display:flex;justify-content:space-between;align-items:center;
-  padding:clamp(10px,2vh,18px) clamp(32px,5vw,64px);
-  border-bottom:1px solid var(--ink4);
-}
-.htb-l{font-size:clamp(7px,.8vw,8.5px);letter-spacing:.28em;text-transform:uppercase;color:var(--ink3);display:flex;align-items:center;gap:8px}
-.htb-r{font-size:clamp(7px,.8vw,8.5px);letter-spacing:.22em;color:var(--ink3);text-align:right}
-.survey-dot{width:5px;height:5px;border-radius:50%;background:var(--teal);animation:sdot 2s ease-in-out infinite;flex-shrink:0}
-@keyframes sdot{0%,100%{box-shadow:0 0 0 0 rgba(27,107,107,.4)}50%{box-shadow:0 0 0 6px rgba(27,107,107,0)}}
-
-/* ─── CENTRE MONUMENT ─── */
-.hero-monument{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  text-align:center;z-index:4;
-  /* parallax target */
-}
-
-/* Name */
-.mon-name{
-  font-family:var(--serif);font-style:italic;font-weight:700;
-  font-size:clamp(52px,10.5vw,158px);
-  line-height:.83;letter-spacing:-.04em;
-  color:var(--ink);
-  position:relative;
-}
-.mon-name em{font-style:normal;color:var(--teal)}
-/* Name reveals line by line */
-.mon-line{overflow:hidden;display:block}
-.mon-inner{
-  display:block;transform:translateY(110%);
-  transition:transform 1.1s var(--spring);
-}
-.mon-inner.up{transform:translateY(0)}
-
-/* hollow second line */
-.mon-line.hollow .mon-inner{
-  color:transparent;
-  -webkit-text-stroke:1.5px rgba(26,23,16,.22);
-  transition-delay:.22s;
-}
-
-/* Decoration lines radiating from name */
-.mon-lines{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:clamp(300px,55vw,700px);height:clamp(300px,55vw,700px);
-  pointer-events:none;z-index:-1;
-}
-
-/* ─── HERO FOOTNOTES around edges ─── */
-.hero-fn{
-  position:absolute;z-index:5;
-  font-family:var(--serif);font-style:italic;
-  font-size:clamp(11px,1.2vw,14px);font-weight:300;
-  color:var(--ink3);max-width:clamp(120px,18vw,220px);
-  line-height:1.55;
-}
-.hero-fn.fn-tl{top:clamp(48px,10vh,88px);left:clamp(32px,5vw,64px)}
-.hero-fn.fn-tr{top:clamp(48px,10vh,88px);right:clamp(32px,5vw,64px);text-align:right}
-.hero-fn.fn-bl{bottom:clamp(48px,10vh,80px);left:clamp(32px,5vw,64px)}
-.hero-fn.fn-br{bottom:clamp(48px,10vh,80px);right:clamp(32px,5vw,64px);text-align:right}
-.fn-label{font-family:var(--mono);font-size:7px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink3);display:block;margin-bottom:4px}
-.hero-fn.in{opacity:1;transform:translateY(0)}
-
-/* Fade-in for footnotes */
-.hero-fn{opacity:0;transform:translateY(8px);transition:opacity .7s ease,transform .7s var(--spring)}
-.fn-tl{transition-delay:.8s}.fn-tr{transition-delay:1s}.fn-bl{transition-delay:1.2s}.fn-br{transition-delay:1.4s}
-
-/* ─── HERO BOTTOM STRIP ─── */
-.hero-strip{
-  position:absolute;bottom:0;left:0;right:0;z-index:5;
-  border-top:1px solid var(--ink4);
-  display:flex;align-items:stretch;
-  background:rgba(247,242,232,.85);backdrop-filter:blur(8px);
-}
-.hs-cell{
-  flex:1;padding:clamp(10px,2vh,16px) clamp(14px,2.5vw,28px);
-  border-right:1px solid var(--ink4);
-  display:flex;flex-direction:column;gap:4px;
-}
-.hs-cell:last-child{border-right:none}
-.hs-label{font-size:7px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink3)}
-.hs-val{font-family:var(--serif);font-style:italic;font-size:clamp(13px,1.4vw,17px);color:var(--ink);font-weight:600}
-.hs-sub{font-size:7px;letter-spacing:.1em;color:var(--ink3)}
-@media(max-width:600px){.hs-cell:nth-child(n+4){display:none}}
-@media(max-width:400px){.hs-cell:nth-child(n+3){display:none}}
-
-/* Scroll arrow */
-.hero-arrow{
-  position:absolute;right:clamp(20px,4vw,52px);bottom:clamp(64px,14vh,100px);
-  z-index:5;display:flex;flex-direction:column;align-items:center;gap:5px;
-  font-size:7px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink3);
-  animation:arrbounce 2.4s ease-in-out infinite;
-}
-@keyframes arrbounce{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
-.hero-arrow svg{width:12px;height:20px;stroke:var(--ink3);stroke-width:1.5;fill:none}
-
-/* ═══════════════════════════════════════════════
-   NAV — FIXED SURVEY TOOLBAR
-═══════════════════════════════════════════════ */
 #nav{
-  position:sticky;top:0;z-index:900;
+  position:fixed;top:0;left:0;right:0;z-index:40;
   display:flex;justify-content:space-between;align-items:center;
-  padding:clamp(9px,1.5vh,14px) clamp(20px,4vw,52px);
-  background:rgba(247,242,232,.95);backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--ink4);
-  gap:16px;
+  padding:clamp(14px,2.5vh,20px) clamp(22px,4vw,52px);
+  opacity:0;transition:opacity .6s ease;
 }
-.nav-sig{
-  font-family:var(--serif);font-style:italic;font-size:clamp(15px,1.8vw,20px);
-  color:var(--ink);font-weight:600;letter-spacing:.01em;white-space:nowrap;
-}
-.nav-links{display:flex;gap:clamp(14px,2.5vw,28px);flex-wrap:wrap}
-.nlink{
-  font-family:var(--mono);font-size:7.5px;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--ink3);cursor:pointer;text-decoration:none;
-  transition:color .2s;position:relative;padding-bottom:2px;
-}
-.nlink::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--teal);transform:scaleX(0);transform-origin:left;transition:transform .3s var(--spring)}
-.nlink:hover{color:var(--teal)}.nlink:hover::after{transform:scaleX(1)}
+#nav.show{opacity:1}
+.nav-sig{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(14px,1.5vw,18px);color:rgba(237,232,223,.7);font-weight:600;letter-spacing:.01em}
+.nav-links{display:flex;gap:clamp(16px,2.5vw,30px)}
+.nlink{font-size:7px;letter-spacing:.22em;text-transform:uppercase;color:rgba(237,232,223,.25);cursor:pointer;transition:color .2s;text-decoration:none}
+.nlink:hover{color:rgba(14,120,120,.8)}
 @media(max-width:480px){.nav-links{display:none}}
 
-/* ═══════════════════════════════════════════════
-   SECTION SHARED
-═══════════════════════════════════════════════ */
-.sec{position:relative;z-index:10}
-.shead{
-  display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
-  padding:clamp(22px,3.5vh,44px) clamp(20px,5vw,72px) clamp(14px,2vh,24px);
-  border-bottom:1px solid var(--ink4);
-  position:sticky;top:clamp(38px,6vh,50px);z-index:50;
-  background:rgba(247,242,232,.94);backdrop-filter:blur(10px);
+#scene-ui{position:fixed;inset:0;z-index:10;pointer-events:none}
+.scene-text{
+  position:absolute;
+  font-size:clamp(7px,.75vw,8.5px);letter-spacing:.28em;text-transform:uppercase;
+  color:rgba(237,232,223,.2);
+  opacity:0;transition:opacity .8s ease;
 }
-.sn{font-family:var(--mono);font-size:8px;letter-spacing:.22em;color:rgba(122,92,20,.6)}
-.st{font-family:var(--serif);font-style:italic;font-size:clamp(22px,4vw,52px);font-weight:700;color:var(--ink);letter-spacing:-.02em}
-.st em{font-style:normal;color:var(--teal)}
-.sr{margin-left:auto;font-family:var(--mono);font-size:8px;letter-spacing:.16em;color:var(--ink3)}
+.scene-text.vis{opacity:1}
+#st-section{top:clamp(14px,2.5vh,20px);left:50%;transform:translateX(-50%)}
+#st-progress{bottom:clamp(20px,4vh,32px);right:clamp(22px,4vw,52px)}
+#st-coords{bottom:clamp(20px,4vh,32px);left:clamp(22px,4vw,52px)}
 
-/* ═══════════════════════════════════════════════
-   RESEARCH — SURVEY CARDS
-═══════════════════════════════════════════════ */
-#s-res{background:var(--p0)}
-.survey-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));
-}
-.scard{
-  border-right:1px solid var(--ink4);border-bottom:1px solid var(--ink4);
-  position:relative;overflow:hidden;cursor:pointer;
-  background:var(--p0);transition:background .3s;
-}
-.scard:hover{background:var(--p1)}
+#rule{position:fixed;left:0;top:0;bottom:0;width:1.5px;background:rgba(237,232,223,.05);z-index:40}
+#rule-fill{position:absolute;top:0;left:0;right:0;height:0%;background:linear-gradient(to bottom,#0E7878,#C49A28);transition:height .06s linear}
 
-/* Survey site marker — animated circle */
-.site-marker{
-  position:absolute;top:clamp(14px,2.5vw,22px);right:clamp(14px,2.5vw,22px);
-  width:clamp(36px,4.5vw,52px);height:clamp(36px,4.5vw,52px);
-  border:1.5px solid rgba(27,107,107,.35);border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--mono);font-size:7px;letter-spacing:.12em;
-  color:rgba(27,107,107,.7);
-  transition:border-color .3s,background .3s;
+#node-labels{position:fixed;inset:0;z-index:15;pointer-events:none}
+.nl{
+  position:absolute;
+  font-size:clamp(7px,.75vw,8px);letter-spacing:.16em;text-transform:uppercase;
+  white-space:nowrap;transform:translate(-50%,-50%);
+  opacity:0;transition:opacity .4s ease;pointer-events:none;
 }
-.site-marker::before{
-  content:'';position:absolute;
-  width:8px;height:8px;border-radius:50%;
-  border:1px solid rgba(27,107,107,.4);
-  animation:pulse 2.5s ease-out infinite;
-}
-@keyframes pulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(2.8);opacity:0}}
-.scard:hover .site-marker{border-color:var(--teal);background:var(--teal2)}
-.scard.open .site-marker{border-color:var(--rust);background:var(--rust2)}
-.scard.open .site-marker{color:var(--rust)}
+.nl.core-lbl{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(11px,1.2vw,15px);letter-spacing:.08em;color:rgba(237,232,223,.9);font-weight:600}
+.nl.proj-lbl{color:rgba(237,232,223,.7)}
+.nl.meth-lbl{color:rgba(21,120,120,.7)}
+.nl.skill-lbl{color:rgba(237,232,223,.3)}
 
-.sc-pad{padding:clamp(18px,2.8vw,30px)}
-.sc-coord{font-size:7px;letter-spacing:.22em;color:var(--ink3);margin-bottom:clamp(10px,1.8vh,16px);display:flex;align-items:center;gap:8px}
-.sc-coord::before{content:'';width:12px;height:1px;background:var(--ink3)}
+#annotations{position:fixed;inset:0;z-index:12;pointer-events:none}
+.ann{
+  position:absolute;
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(10px,1.1vw,13px);
+  font-weight:300;line-height:1.65;color:rgba(237,232,223,.35);
+  max-width:clamp(140px,15vw,190px);
+  opacity:0;transition:opacity 1.2s ease;
+}
+.ann.vis{opacity:1}
+.ann-key{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.22em;text-transform:uppercase;color:rgba(14,120,120,.55);display:block;margin-bottom:4px;font-style:normal}
 
-/* Huge title */
-.sc-title{
-  font-family:var(--bebas);font-size:clamp(32px,5vw,64px);
-  letter-spacing:.04em;line-height:.88;color:var(--ink);
-  margin-bottom:clamp(8px,1.5vh,14px);
-  transition:letter-spacing .3s var(--spring);
+#panel{
+  position:fixed;top:0;right:0;bottom:0;z-index:60;
+  width:min(420px,90vw);
+  background:rgba(4,4,3,.96);backdrop-filter:blur(20px);
+  border-left:1px solid rgba(237,232,223,.07);
+  transform:translateX(100%);transition:transform .55s cubic-bezier(.16,1,.3,1);
+  overflow-y:auto;pointer-events:all;
 }
-.scard:hover .sc-title{letter-spacing:.06em}
+#panel.open{transform:translateX(0)}
+#panel-close{
+  position:sticky;top:0;right:0;display:flex;justify-content:flex-end;
+  padding:clamp(16px,2.5vh,22px) clamp(18px,3vw,26px);
+  background:rgba(4,4,3,.96);z-index:1;
+  border-bottom:1px solid rgba(237,232,223,.05);
+}
+#panel-close button{
+  background:none;border:1px solid rgba(237,232,223,.1);color:rgba(237,232,223,.4);
+  font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.22em;
+  text-transform:uppercase;padding:7px 14px;cursor:pointer;transition:all .2s;
+}
+#panel-close button:hover{border-color:rgba(14,120,120,.4);color:rgba(14,120,120,.8)}
+#panel-content{padding:clamp(14px,2.5vh,22px) clamp(18px,3vw,28px) clamp(28px,5vh,52px)}
+.pc-eyebrow{font-size:7px;letter-spacing:.26em;text-transform:uppercase;color:rgba(14,120,120,.7);margin-bottom:10px}
+.pc-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:700;font-size:clamp(38px,6vw,70px);letter-spacing:-.03em;line-height:.88;color:#EDE8DF;margin-bottom:14px}
+.pc-venue{display:inline-block;font-size:7px;letter-spacing:.14em;padding:4px 10px;border:1px solid rgba(14,120,120,.22);color:rgba(14,120,120,.8);background:rgba(14,120,120,.05);margin-bottom:18px}
+.pc-desc{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(14px,1.4vw,17px);font-weight:300;line-height:1.72;color:rgba(237,232,223,.6);margin-bottom:22px}
+.pc-divider{height:1px;background:rgba(237,232,223,.07);margin:18px 0}
+.pc-row{margin-bottom:18px}
+.pc-row-key{font-size:7px;letter-spacing:.22em;text-transform:uppercase;color:rgba(196,154,40,.6);margin-bottom:6px;display:flex;align-items:center;gap:7px}
+.pc-row-key::before{content:'→';color:rgba(14,120,120,.6);font-size:9px}
+.pc-row-val{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(13px,1.3vw,15.5px);font-weight:300;line-height:1.82;color:rgba(237,232,223,.55)}
+.pc-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:18px}
+.pc-tag{font-size:7px;letter-spacing:.1em;padding:4px 9px;border:1px solid rgba(237,232,223,.1);color:rgba(237,232,223,.35)}
 
-.sc-venue{
-  display:inline-block;font-size:7px;letter-spacing:.14em;
-  padding:3px 8px;border:1px solid var(--teal2);
-  background:var(--teal3);color:var(--teal);margin-bottom:clamp(10px,1.5vh,14px);
-}
-.sc-desc{
-  font-family:var(--serif);font-style:italic;font-size:clamp(12.5px,1.25vw,15px);
-  font-weight:300;line-height:1.72;color:var(--ink2);
-  margin-bottom:clamp(12px,2vh,16px);transition:color .3s;
-}
-.scard:hover .sc-desc{color:rgba(26,23,16,.72)}
-.sc-tags{display:flex;flex-wrap:wrap;gap:4px}
-.sc-tag{
-  font-size:7px;letter-spacing:.1em;padding:3px 7px;
-  border:1px solid var(--ink4);color:var(--ink3);
-  transition:border-color .2s,color .2s;
-}
-.scard:hover .sc-tag{border-color:rgba(26,23,16,.18);color:var(--ink2)}
+.dom-sec{position:relative;overflow:hidden}
+.ds-head{padding:clamp(44px,7vh,88px) clamp(22px,5vw,72px) clamp(18px,3vh,28px);border-bottom:1px solid rgba(237,232,223,.05)}
+.ds-label{font-size:7.5px;letter-spacing:.28em;text-transform:uppercase;color:rgba(196,154,40,.6);display:block;margin-bottom:8px}
+.ds-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:700;font-size:clamp(32px,6vw,80px);letter-spacing:-.02em;line-height:.9;color:#EDE8DF}
+.ds-title em{font-style:normal;color:rgba(14,120,120,.8)}
 
-/* toggle foot */
-.sc-foot{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:clamp(9px,1.5vh,13px) clamp(18px,2.8vw,30px);
-  border-top:1px solid var(--ink4);
-  font-size:7.5px;letter-spacing:.16em;text-transform:uppercase;
-  color:rgba(139,58,26,.55);transition:color .2s;
-}
-.scard:hover .sc-foot,.scard.open .sc-foot{color:var(--rust)}
-.sc-arr{transition:transform .38s var(--spring)}
-.scard.open .sc-arr{transform:rotate(180deg)}
+#pub-sec{background:#040403}
+.pub-row{display:grid;grid-template-columns:52px 1fr auto;gap:clamp(14px,2.5vw,36px);align-items:baseline;padding:clamp(16px,2.5vh,24px) clamp(22px,5vw,72px);border-bottom:1px solid rgba(237,232,223,.05);position:relative;overflow:hidden;transition:background .3s}
+.pub-row:first-child{border-top:1px solid rgba(237,232,223,.05)}
+.pub-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(14,120,120,.04);transition:width .4s ease}
+.pub-row:hover::before{width:100%}
+.pub-yr{font-size:8px;letter-spacing:.1em;color:rgba(196,154,40,.8);position:relative;z-index:1}
+.pub-title{font-family:'Cormorant Garamond',serif;font-size:clamp(15px,1.8vw,22px);font-weight:600;font-style:italic;letter-spacing:-.015em;line-height:1.2;color:#EDE8DF;position:relative;z-index:1}
+.pub-venue{font-size:clamp(7px,.8vw,8.5px);letter-spacing:.12em;color:rgba(237,232,223,.25);text-align:right;white-space:nowrap;flex-shrink:0;position:relative;z-index:1}
+@media(max-width:540px){.pub-row{grid-template-columns:44px 1fr;grid-template-rows:auto auto}.pub-venue{grid-column:2;text-align:left;margin-top:3px}}
 
-/* Abstract drawer */
-.sc-drawer{
-  max-height:0;overflow:hidden;
-  transition:max-height .55s cubic-bezier(.4,0,.2,1);
-  background:var(--p1);border-top:0px solid rgba(26,23,16,.08);
-}
-.scard.open .sc-drawer{max-height:900px;border-top-width:1px}
-.sc-di{padding:clamp(18px,2.8vw,30px)}
-.sc-dr{margin-bottom:clamp(12px,2vh,18px)}
-.sc-dr:last-child{margin-bottom:0}
-.sc-drk{
-  font-size:7px;letter-spacing:.22em;text-transform:uppercase;
-  color:rgba(122,92,20,.65);margin-bottom:6px;
-  display:flex;align-items:center;gap:7px;
-}
-.sc-drk::before{content:'→';color:var(--teal);font-size:9px}
-.sc-drv{
-  font-family:var(--serif);font-style:italic;font-size:clamp(13px,1.3vw,15px);
-  font-weight:300;line-height:1.82;color:var(--ink2);
-}
-
-/* ═══════════════════════════════════════════════
-   PUBLICATIONS — MAP LEGEND
-═══════════════════════════════════════════════ */
-#s-pub{background:var(--p1)}
-
-/* Scrolling legend tape */
-.legend-tape{
-  overflow:hidden;background:var(--ink);
-  border-top:2px solid var(--p2);border-bottom:2px solid var(--p2);
-  padding:8px 0;
-}
-.lt-inner{display:flex;white-space:nowrap;animation:ltape 50s linear infinite}
-.lt-inner:hover{animation-play-state:paused}
-.lt-item{
-  font-family:var(--serif);font-style:italic;
-  font-size:clamp(12px,1.3vw,15px);
-  color:rgba(247,242,232,.22);padding:0 clamp(14px,3vw,36px);
-  border-right:1px solid rgba(247,242,232,.07);flex-shrink:0;
-}
-.lt-item b{color:rgba(122,92,20,.65);font-style:normal;font-weight:400}
-@keyframes ltape{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-
-.ledger{padding:0 clamp(20px,5vw,72px) clamp(24px,4vw,52px)}
-.lrow{
-  display:grid;grid-template-columns:60px 1fr auto;
-  gap:clamp(12px,2.5vw,36px);align-items:baseline;
-  padding:clamp(14px,2.2vh,22px) 0;
-  border-bottom:1px solid var(--ink4);
-  position:relative;overflow:hidden;
-}
-.lrow:first-child{border-top:1px solid var(--ink4)}
-.lrow::before{
-  content:'';position:absolute;
-  left:-clamp(20px,5vw,72px);top:0;bottom:0;width:0;
-  background:rgba(27,107,107,.06);transition:width .38s ease;
-}
-.lrow:hover::before{width:calc(100% + clamp(20px,5vw,72px)*2)}
-.lyr{font-size:8px;letter-spacing:.1em;color:var(--gold);position:relative;z-index:1}
-.lt{
-  font-family:var(--serif);font-size:clamp(14px,1.75vw,20px);
-  font-weight:600;font-style:italic;letter-spacing:-.015em;line-height:1.25;
-  color:var(--ink);position:relative;z-index:1;
-}
-.lv{
-  font-size:clamp(7px,.8vw,8.5px);letter-spacing:.12em;
-  color:var(--ink3);text-align:right;white-space:nowrap;flex-shrink:0;position:relative;z-index:1;
-}
-@media(max-width:540px){.lrow{grid-template-columns:48px 1fr;grid-template-rows:auto auto}.lv{grid-column:2;text-align:left;margin-top:2px}}
-
-/* ═══════════════════════════════════════════════
-   FOUNDATION — ATLAS SPREAD
-═══════════════════════════════════════════════ */
-#s-found{background:var(--p0)}
-.atlas{display:grid;grid-template-columns:1fr 1fr}
-@media(max-width:680px){.atlas{grid-template-columns:1fr}}
-.atlas-l{
-  background:var(--p1);padding:clamp(28px,5vw,64px);
-  border-right:1px solid var(--ink4);position:relative;overflow:hidden;
-}
-/* ruled lines */
-.atlas-l::before{
-  content:'';position:absolute;inset:0;
-  background-image:repeating-linear-gradient(0deg,transparent,transparent 29px,rgba(26,23,16,.04) 29px,rgba(26,23,16,.04) 30px);
-  pointer-events:none;
-}
-.edu-huge{
-  font-family:var(--bebas);font-size:clamp(52px,9vw,120px);
-  letter-spacing:.03em;line-height:.86;color:var(--ink);position:relative;z-index:1;
-}
-.edu-huge em{color:var(--teal);font-style:normal}
-.edu-yr{font-size:8px;letter-spacing:.22em;color:var(--gold);margin-top:8px;margin-bottom:clamp(16px,3vh,28px);position:relative;z-index:1}
+#found-sec{background:#050504}
+.found-grid{display:grid;grid-template-columns:1fr 1fr}
+@media(max-width:640px){.found-grid{grid-template-columns:1fr}}
+.found-l{padding:clamp(28px,5vw,64px);border-right:1px solid rgba(237,232,223,.05)}
+.found-l::before{content:'';display:block;width:100%;height:100%;position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 29px,rgba(237,232,223,.02) 29px,rgba(237,232,223,.02) 30px);pointer-events:none}
+.found-l{position:relative;overflow:hidden}
+.edu-huge{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:700;font-size:clamp(60px,10vw,130px);letter-spacing:-.02em;line-height:.86;color:#EDE8DF;position:relative;z-index:1}
+.edu-huge em{font-style:normal;color:rgba(14,120,120,.7)}
+.edu-yr{font-size:8px;letter-spacing:.22em;color:rgba(196,154,40,.7);margin:10px 0 clamp(16px,3vh,28px);position:relative;z-index:1}
 .courses{display:flex;flex-wrap:wrap;gap:5px;position:relative;z-index:1}
-.crs{
-  font-size:7.5px;letter-spacing:.1em;
-  padding:4px 9px;border:1px solid var(--ink4);
-  color:var(--ink3);transition:all .22s;cursor:default;
-}
-.crs:hover{border-color:var(--teal);color:var(--teal);background:var(--teal3)}
-.atlas-r{background:var(--p0);padding:clamp(28px,5vw,64px);display:flex;flex-direction:column;gap:clamp(12px,2vh,18px)}
-.skb{
-  border:1px solid var(--ink4);padding:clamp(12px,2vw,18px);
-  transition:border-color .25s,background .25s;
-}
-.skb:hover{border-color:rgba(27,107,107,.35);background:var(--teal3)}
-.skcat{
-  font-size:7.5px;letter-spacing:.2em;text-transform:uppercase;
-  color:rgba(139,58,26,.6);margin-bottom:8px;padding-bottom:8px;
-  border-bottom:1px solid var(--ink4);
-}
-.skts{display:flex;flex-wrap:wrap;gap:4px}
-.skt{
-  font-size:7.5px;letter-spacing:.1em;
-  padding:3px 7px;border:1px solid var(--ink4);
-  color:var(--ink3);transition:all .2s;cursor:default;
-}
-.skt:hover{border-color:rgba(27,107,107,.4);color:var(--teal)}
-.skt.core{border-color:var(--gold2);color:var(--gold)}
+.crs{font-size:7.5px;letter-spacing:.1em;padding:4px 9px;border:1px solid rgba(237,232,223,.08);color:rgba(237,232,223,.28);transition:all .22s;cursor:default}
+.crs:hover{border-color:rgba(14,120,120,.35);color:rgba(14,120,120,.8)}
+.found-r{padding:clamp(28px,5vw,64px);display:flex;flex-direction:column;gap:clamp(12px,2.2vh,18px)}
+.sk-block{border:1px solid rgba(237,232,223,.06);padding:clamp(12px,2vw,18px);transition:border-color .25s}
+.sk-block:hover{border-color:rgba(14,120,120,.2)}
+.sk-cat{font-size:7.5px;letter-spacing:.2em;text-transform:uppercase;color:rgba(196,154,40,.55);margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(237,232,223,.06)}
+.sk-tags{display:flex;flex-wrap:wrap;gap:4px}
+.sk-tag{font-size:7.5px;letter-spacing:.1em;padding:3px 8px;border:1px solid rgba(237,232,223,.07);color:rgba(237,232,223,.3);transition:all .2s;cursor:default}
+.sk-tag:hover{border-color:rgba(14,120,120,.35);color:rgba(14,120,120,.7)}
+.sk-tag.core{border-color:rgba(196,154,40,.18);color:rgba(196,154,40,.7)}
 
-/* ═══════════════════════════════════════════════
-   FIELD NOTES — BROADSHEET
-═══════════════════════════════════════════════ */
-#s-notes{background:var(--p2)}
-.broadsheet{
-  display:grid;grid-template-columns:1.6fr 1px 1fr;
-  border-bottom:2px solid var(--ink);
-  min-height:clamp(280px,44vh,540px);
-}
-@media(max-width:700px){.broadsheet{grid-template-columns:1fr;grid-template-rows:auto}}
-.bs-div{background:rgba(26,23,16,.1)}
-@media(max-width:700px){.bs-div{display:none}}
-.bs-feat{
-  padding:clamp(22px,4vw,52px);cursor:pointer;
-  transition:background .25s;position:relative;overflow:hidden;
-  display:flex;flex-direction:column;justify-content:space-between;
-}
-.bs-feat:hover{background:rgba(26,23,16,.03)}
-.bs-feat::before{
-  content:'FEATURED';position:absolute;
-  top:clamp(12px,2vh,20px);right:clamp(12px,2vw,20px);
-  font-family:var(--mono);font-size:7px;letter-spacing:.3em;
-  color:rgba(26,23,16,.1);
-}
-.bs-aside{
-  padding:clamp(22px,4vw,52px);
-  background:var(--ink);
-  display:flex;flex-direction:column;justify-content:space-between;
-}
-.bsa-label{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:rgba(122,92,20,.45);margin-bottom:10px}
-.bsa-big{
-  font-family:var(--serif);font-style:italic;
-  font-size:clamp(26px,4.5vw,62px);font-weight:700;
-  color:var(--p0);line-height:.9;
-}
-.bsa-sub{
-  font-family:var(--serif);font-style:italic;
-  font-size:clamp(11px,1.1vw,13px);font-weight:300;
-  color:rgba(247,242,232,.38);line-height:1.72;margin-top:12px;
-}
-.n-tag{font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--rust);opacity:.8;margin-bottom:8px}
-.n-h{
-  font-family:var(--serif);font-size:clamp(17px,2.5vw,32px);
-  font-weight:700;font-style:italic;letter-spacing:-.02em;line-height:1.1;
-  color:var(--ink);margin-bottom:10px;
-}
-.n-exc{
-  font-family:var(--serif);font-style:italic;font-size:clamp(12px,1.25vw,15px);
-  font-weight:300;line-height:1.78;color:var(--ink2);
-}
-.n-expand{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.4,0,.2,1)}
-.bs-feat.open .n-expand,.note-card.open .n-expand{max-height:600px}
-.n-full{
-  font-family:var(--serif);font-style:italic;font-size:clamp(12px,1.2vw,14.5px);
-  font-weight:300;line-height:1.85;color:var(--ink2);
-  padding-top:14px;border-top:1px solid rgba(26,23,16,.09);margin-top:14px;
-}
-.n-read{
-  font-size:8px;letter-spacing:.18em;color:var(--gold);margin-top:clamp(10px,2vh,18px);
-  transition:letter-spacing .25s,color .2s;
-}
-.bs-feat:hover .n-read{letter-spacing:.26em;color:var(--teal)}
-.notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr))}
-.note-card{
-  padding:clamp(18px,2.5vw,30px);
-  border-right:1px solid var(--ink4);border-bottom:1px solid var(--ink4);
-  cursor:pointer;transition:background .25s;position:relative;overflow:hidden;
-}
-.note-card:hover{background:rgba(26,23,16,.04)}
-.note-card::after{
-  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
-  background:var(--teal);transform:scaleX(0);transform-origin:left;
-  transition:transform .4s var(--spring);
-}
-.note-card:hover::after{transform:scaleX(1)}
-.ni-read{font-size:8px;letter-spacing:.16em;color:var(--gold);margin-top:10px;transition:all .2s}
-.note-card:hover .ni-read{letter-spacing:.24em;color:var(--teal)}
-
-/* ═══════════════════════════════════════════════
-   OPEN QUESTIONS — TOPOGRAPHIC
-═══════════════════════════════════════════════ */
-#s-q{background:var(--p0);position:relative;overflow:hidden}
-/* Topo lines behind */
-#topoC{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:.5}
-.q-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));
-  gap:1px;background:var(--ink4);position:relative;z-index:1;
-}
-.q-cell{
-  background:var(--p0);padding:clamp(20px,2.8vw,32px);
-  position:relative;overflow:hidden;transition:background .3s;
-}
-.q-cell:hover{background:var(--p1)}
-.q-cell::before{
-  content:attr(data-n);
-  position:absolute;right:10px;bottom:6px;
-  font-family:var(--bebas);font-size:clamp(52px,7vw,90px);
-  color:rgba(26,23,16,.04);letter-spacing:.06em;pointer-events:none;
-}
-.q-key{
-  font-size:7.5px;letter-spacing:.22em;text-transform:uppercase;
-  color:rgba(122,92,20,.6);margin-bottom:10px;
-  display:flex;align-items:center;gap:8px;
-}
-.q-key::before{content:'';width:14px;height:1px;background:rgba(27,107,107,.45)}
-.q-txt{
-  font-family:var(--serif);font-style:italic;font-size:clamp(13px,1.4vw,16px);
-  font-weight:300;line-height:1.72;color:var(--ink2);
-}
-
-/* ═══════════════════════════════════════════════
-   CONTACT — TERMINAL ON PARCHMENT
-═══════════════════════════════════════════════ */
-#s-ct{background:var(--p1);min-height:100svh;display:flex;flex-direction:column}
+#contact-sec{background:#030303;min-height:100svh;display:flex;flex-direction:column}
 .ct-split{flex:1;display:grid;grid-template-columns:1fr 1fr}
-@media(max-width:600px){.ct-split{grid-template-columns:1fr}}
-.ct-l{
-  background:var(--p0);padding:clamp(40px,8vh,100px) clamp(24px,5vw,64px);
-  display:flex;flex-direction:column;justify-content:space-between;
-  border-right:1px solid var(--ink4);position:relative;overflow:hidden;
-}
-.ct-l::before{
-  content:'';position:absolute;inset:0;
-  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
-  background-size:40px 40px;pointer-events:none;
-}
-.ct-big{
-  font-family:var(--bebas);font-size:clamp(56px,11vw,180px);
-  letter-spacing:.02em;line-height:.86;color:var(--ink);
-  position:relative;z-index:1;
-}
-.ct-big .outline{
-  display:block;color:transparent;
-  -webkit-text-stroke:1.5px rgba(26,23,16,.2);
-}
-.ct-caption{
-  font-family:var(--serif);font-style:italic;font-size:clamp(13px,1.4vw,16px);
-  color:var(--ink2);font-weight:300;line-height:1.7;position:relative;z-index:1;
-  max-width:32ch;
-}
-.ct-r{
-  background:var(--ink);padding:clamp(40px,8vh,100px) clamp(24px,5vw,64px);
-  display:flex;flex-direction:column;justify-content:space-between;
-}
-.ct-term{display:flex;flex-direction:column}
-.tl{
-  font-family:var(--mono);font-size:clamp(9px,1.1vw,12px);
-  color:rgba(247,242,232,.7);line-height:2.5;letter-spacing:.05em;
-  max-height:0;overflow:hidden;transition:max-height .4s ease;
-}
-.tl.show{max-height:3.5em}
-.td{color:rgba(247,242,232,.25)}.tw{color:rgba(247,242,232,.85)}.tg{color:rgba(122,92,20,.9)}
-.tcur{display:inline-block;width:7px;height:clamp(10px,1.1vw,12px);background:rgba(247,242,232,.7);vertical-align:middle;animation:tcblink 1s step-end infinite}
-@keyframes tcblink{0%,100%{opacity:1}50%{opacity:0}}
-.ct-links{display:flex;flex-direction:column;margin-top:clamp(24px,4vh,48px)}
-.clink{
-  display:flex;align-items:baseline;gap:clamp(10px,2.5vw,22px);
-  padding:clamp(10px,1.5vh,14px) 0;
-  border-bottom:1px solid rgba(247,242,232,.06);
-  transition:padding-left .25s var(--spring);
-}
-.clink:hover{padding-left:8px}
-.clink:last-child{border-bottom:none}
-.clk{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:rgba(247,242,232,.22);min-width:62px}
-.clv{font-size:clamp(10px,1.1vw,13px);color:rgba(247,242,232,.6);text-decoration:none;transition:color .2s}
-.clv:hover{color:var(--p0)}
+@media(max-width:580px){.ct-split{grid-template-columns:1fr}}
+.ct-l{padding:clamp(44px,8vh,100px) clamp(22px,5vw,64px);display:flex;flex-direction:column;justify-content:space-between;border-right:1px solid rgba(237,232,223,.05);position:relative;overflow:hidden}
+.ct-l::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(237,232,223,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(237,232,223,.015) 1px,transparent 1px);background-size:44px 44px;pointer-events:none}
+.ct-big{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(52px,10vw,170px);letter-spacing:-.02em;line-height:.86;color:#EDE8DF;position:relative;z-index:1}
+.ct-big .outline{display:block;color:transparent;-webkit-text-stroke:1.5px rgba(237,232,223,.14)}
+.ct-cap{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(13px,1.4vw,16px);color:rgba(237,232,223,.35);font-weight:300;line-height:1.72;position:relative;z-index:1;max-width:33ch;margin-top:clamp(18px,3vh,32px)}
+.ct-r{padding:clamp(44px,8vh,100px) clamp(22px,5vw,64px);display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.ct-r::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(237,232,223,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(237,232,223,.014) 1px,transparent 1px);background-size:44px 44px;animation:gridDrift 20s linear infinite;pointer-events:none}
+@keyframes gridDrift{from{background-position:0 0}to{background-position:44px 44px}}
+.term{display:flex;flex-direction:column;position:relative;z-index:1}
+.t-line{font-size:clamp(9px,1vw,11.5px);color:rgba(237,232,223,.5);line-height:2.5;letter-spacing:.06em;max-height:0;overflow:hidden;transition:max-height .4s ease}
+.t-line.show{max-height:3.5em}
+.t-dim{color:rgba(237,232,223,.2)}.t-hi{color:rgba(237,232,223,.85)}.t-gold{color:rgba(196,154,40,.9)}
+.t-cur{display:inline-block;width:7px;height:11px;background:rgba(237,232,223,.6);vertical-align:middle;animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.ct-links{display:flex;flex-direction:column;margin-top:clamp(26px,5vh,52px);position:relative;z-index:1}
+.c-link{display:flex;align-items:baseline;gap:clamp(12px,2.5vw,24px);padding:clamp(11px,1.8vh,15px) 0;border-bottom:1px solid rgba(237,232,223,.05);transition:padding-left .25s cubic-bezier(.16,1,.3,1)}
+.c-link:hover{padding-left:9px}
+.c-link:last-child{border-bottom:none}
+.c-key{font-size:8px;letter-spacing:.22em;text-transform:uppercase;color:rgba(237,232,223,.2);min-width:62px}
+.c-val{font-size:clamp(10px,1.1vw,13px);color:rgba(237,232,223,.45);text-decoration:none;transition:color .2s}
+.c-val:hover{color:#EDE8DF}
 
-/* ═══════════════════════════════════════════════
-   REVEAL SYSTEM
-═══════════════════════════════════════════════ */
-.rv{opacity:0;transform:translateY(20px);transition:opacity .7s ease,transform .7s var(--spring)}
-.rv.in{opacity:1;transform:translateY(0)}
-.rvl{opacity:0;transform:translateX(-16px);transition:opacity .65s ease,transform .65s var(--spring)}
-.rvl.in{opacity:1;transform:translateX(0)}
-.d1{transition-delay:.07s}.d2{transition-delay:.14s}.d3{transition-delay:.21s}
-.d4{transition-delay:.28s}.d5{transition-delay:.35s}.d6{transition-delay:.42s}
+#pub-orbit{position:fixed;bottom:clamp(60px,10vh,90px);left:50%;transform:translateX(-50%);z-index:15;pointer-events:none;opacity:0;transition:opacity .8s ease;text-align:center}
+#pub-orbit.vis{opacity:1}
+.po-label{font-size:7px;letter-spacing:.26em;text-transform:uppercase;color:rgba(196,154,40,.5);margin-bottom:6px}
+.po-dots{display:flex;gap:6px;justify-content:center}
+.po-dot{width:4px;height:4px;border-radius:50%;background:rgba(196,154,40,.25);transition:background .3s}
+.po-dot.active{background:rgba(196,154,40,.8)}
 
-@media(hover:none){#CUR{display:none}body{cursor:auto}}
+#tooltip{
+  position:fixed;z-index:20;pointer-events:none;
+  font-size:7.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(237,232,223,.6);
+  background:rgba(4,4,3,.88);
+  border:1px solid rgba(237,232,223,.08);
+  padding:7px 12px;
+  opacity:0;transition:opacity .2s ease;
+  transform:translate(12px,-50%);
+}
+#tooltip.vis{opacity:1}
+
+::-webkit-scrollbar{width:0px}
 </style>
 </head>
 <body>
+<canvas id="c"></canvas>
 
-<div id="CUR"><div id="Cv"></div><div id="Ch"></div><div id="Ccircle"></div><div id="Clag"></div><div id="Cpt"></div></div>
-<canvas id="bgC"></canvas>
-<div id="rule"><div id="ruleFill"></div></div>
-<div id="rulePct">0%</div>
+<div id="boot">
+  <div id="boot-lines"></div>
+  <div id="boot-name">Vikrant Vikram</div>
+</div>
 
-<!-- ══ HERO ══ -->
-<section id="hero">
-  <canvas id="compassC"></canvas>
-
-  <!-- ticks -->
-  <div class="tick-row top" id="ticks-t"></div>
-  <div class="tick-row bottom" id="ticks-b"></div>
-  <div class="tick-col left" id="ticks-l"></div>
-  <div class="tick-col right" id="ticks-r"></div>
-
-  <!-- coordinate labels -->
-  <div class="coord coord-n">28°36'N</div>
-  <div class="coord coord-s">28°36'S</div>
-  <div class="coord coord-e">77°12'E</div>
-  <div class="coord coord-w">77°12'W</div>
-
-  <!-- top bar -->
-  <div class="hero-topbar">
-    <div class="htb-l">
-      <div class="survey-dot"></div>
-      <span id="hero-clock">00:00:00 UTC</span>
-      <span>· SURVEY ACTIVE · TLP:WHITE</span>
-    </div>
-    <div class="htb-r">RESEARCH CARTOGRAPHY · NODE:ACTIVE</div>
-  </div>
-
-  <!-- corner footnotes -->
-  <div class="hero-fn fn-tl" id="fn-tl">
-    <span class="fn-label">Field</span>
-    Security &amp; AI Research
-  </div>
-  <div class="hero-fn fn-tr" id="fn-tr">
-    <span class="fn-label">Status</span>
-    PhD Applicant · 2027
-  </div>
-  <div class="hero-fn fn-bl" id="fn-bl">
-    <span class="fn-label">Papers</span>
-    4 accepted · AsiaCCS · ICME · ICASSP ·AACL
-  </div>
-  <div class="hero-fn fn-br" id="fn-br">
-    <span class="fn-label">Coordinates</span>
-    Delhi, India · 28.6°N 77.2°E
-  </div>
-
-  <!-- name monument -->
-  <div class="hero-monument" id="monument">
-    <div class="mon-name">
-      <div class="mon-line"><span class="mon-inner" id="mn1">Vikrant</span></div>
-      <div class="mon-line hollow"><span class="mon-inner" id="mn2">Vikram</span></div>
-    </div>
-  </div>
-
-  <!-- bottom data strip -->
-  <div class="hero-strip" id="hero-strip"></div>
-
-  <div class="hero-arrow">
-    <svg viewBox="0 0 12 20"><line x1="6" y1="1" x2="6" y2="19"/><polyline points="1,14 6,19 11,14"/></svg>
-    <span>survey</span>
-  </div>
-</section>
-
-<!-- ══ NAV ══ -->
 <nav id="nav">
   <div class="nav-sig">Vikrant Vikram</div>
   <div class="nav-links">
-    <span class="nlink" onclick="jmp('#s-res')">Research</span>
-    <span class="nlink" onclick="jmp('#s-pub')">Papers</span>
-    <span class="nlink" onclick="jmp('#s-found')">Foundation</span>
-    <span class="nlink" onclick="jmp('#s-notes')">Notes</span>
-    <span class="nlink" onclick="jmp('#s-q')">Questions</span>
-    <span class="nlink" onclick="jmp('#s-ct')">Contact</span>
+    <a class="nlink" href="#pub-sec">Publications</a>
+    <a class="nlink" href="#found-sec">Foundation</a>
+    <a class="nlink" href="#contact-sec">Contact</a>
   </div>
 </nav>
 
-<!-- ══ RESEARCH ══ -->
-<section class="sec" id="s-res">
-  <div class="shead">
-    <span class="sn">I /</span>
-    <span class="st">Re<em>search</em></span>
-    <span class="sr" id="rc"></span>
-  </div>
-  <div class="survey-grid" id="survey-grid"></div>
-</section>
+<div id="scene-ui">
+  <div class="scene-text" id="st-section">Security Research · Hyperbolic Space</div>
+  <div class="scene-text" id="st-progress">0%</div>
+  <div class="scene-text" id="st-coords">28.6°N · 77.2°E · Node:Active</div>
+</div>
 
-<!-- ══ PUBLICATIONS ══ -->
-<section class="sec" id="s-pub">
-  <div class="shead" style="background:rgba(239,232,213,.95)">
-    <span class="sn">II /</span>
-    <span class="st">Pub<em>lications</em></span>
-    <span class="sr" id="pc"></span>
+<div id="rule"><div id="rule-fill"></div></div>
+<div id="node-labels"></div>
+<div id="annotations">
+  <div class="ann" id="ann-0" style="top:22%;left:6%">
+    <span class="ann-key">problem</span>
+    How to classify malware across heterogeneous execution environments?
   </div>
-  <div class="legend-tape"><div class="lt-inner" id="lt"></div></div>
-  <div class="ledger" id="ledger"></div>
-</section>
+  <div class="ann" id="ann-1" style="top:22%;right:6%">
+    <span class="ann-key">approach</span>
+    Hyperbolic cross-attention fuses behavioral, static &amp; dynamic traces in curved space.
+  </div>
+  <div class="ann" id="ann-2" style="bottom:28%;left:6%">
+    <span class="ann-key">limitation</span>
+    Domain shift at inference. Cross-device models degrade on unseen hardware.
+  </div>
+  <div class="ann" id="ann-3" style="bottom:28%;right:6%">
+    <span class="ann-key">open question</span>
+    Can LLM attribution survive adversarial prompt-level obfuscation at inference?
+  </div>
+</div>
 
-<!-- ══ FOUNDATION ══ -->
-<section class="sec" id="s-found">
-  <div class="shead">
-    <span class="sn">III /</span>
-    <span class="st">Foun<em>dation</em></span>
-  </div>
-  <div class="atlas" id="atlas"></div>
-</section>
+<div id="tooltip"></div>
 
-<!-- ══ FIELD NOTES ══ -->
-<section class="sec" id="s-notes">
-  <div class="shead" style="background:rgba(231,221,191,.95)">
-    <span class="sn">IV /</span>
-    <span class="st">Field <em>Notes</em></span>
-    <span class="sr" id="bc"></span>
-  </div>
-  <div id="blog-wrap"></div>
-</section>
+<div id="panel">
+  <div id="panel-close"><button onclick="closePanel()">Close ×</button></div>
+  <div id="panel-content"></div>
+</div>
 
-<!-- ══ QUESTIONS ══ -->
-<section class="sec" id="s-q">
-  <canvas id="topoC"></canvas>
-  <div class="shead">
-    <span class="sn">V /</span>
-    <span class="st">Open <em>Questions</em></span>
-  </div>
-  <div class="q-grid" id="q-grid"></div>
-</section>
+<div id="pub-orbit">
+  <div class="po-label">Publication Ring</div>
+  <div class="po-dots" id="po-dots"></div>
+</div>
 
-<!-- ══ CONTACT ══ -->
-<section class="sec" id="s-ct">
-  <div class="shead">
-    <span class="sn">VI /</span>
-    <span class="st">Con<em>tact</em></span>
-  </div>
-  <div class="ct-split">
-    <div class="ct-l">
-      <div class="ct-big rvl">Initiate<span class="outline">Contact</span></div>
-      <div class="ct-caption rv d2">Seeking research roles and PhD positions in security, adversarial ML, and multimodal systems.</div>
+<div id="scroll-space"></div>
+
+<div id="dom-bottom">
+  <!-- PUBLICATIONS -->
+  <section class="dom-sec" id="pub-sec">
+    <div class="ds-head">
+      <span class="ds-label">II / Publications</span>
+      <h2 class="ds-title">Ver<em>ified</em> Work</h2>
     </div>
-    <div class="ct-r">
-      <div class="ct-term" id="ct-term"></div>
-      <div class="ct-links" id="ct-links"></div>
-    </div>
-  </div>
-</section>
+    <div id="pub-list"></div>
+  </section>
 
+  <!-- FOUNDATION -->
+  <section class="dom-sec" id="found-sec">
+    <div class="ds-head">
+      <span class="ds-label">III / Foundation</span>
+      <h2 class="ds-title">Edu<em>cation</em></h2>
+    </div>
+    <div class="found-grid" id="found-grid"></div>
+  </section>
+
+  <section class="dom-sec" id="contact-sec">
+    <div class="ds-head">
+      <span class="ds-label">VI / Contact</span>
+      <h2 class="ds-title">In<em>quire</em></h2>
+    </div>
+    <div class="ct-split">
+      <div class="ct-l">
+        <div class="ct-big">Initiate<span class="outline">Contact</span></div>
+        <div class="ct-cap">Seeking research roles and PhD positions in security, adversarial ML, and multimodal systems.</div>
+      </div>
+      <div class="ct-r">
+        <div class="term" id="term"></div>
+        <div class="ct-links" id="ct-links"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-/* ════════════ DATA ════════════ */
-const D={
-  tags:['Multimodal ML','Hyperbolic Geom.','Security','Side-Channel','NLP','LLMs','Adversarial ML'],
-  strip:[
-    {label:'Researcher',val:'Vikrant Vikram',sub:'Delhi, India'},
-    {label:'Papers',val:'4 Accepted',sub:'2025–2026'},
-    {label:'Venues',val:'ICASSP · AsiaCCS · ICME · AACL'},
-    {label:'Domain',val:'Security & AI',sub:'Hyperbolic ML'},
-    {label:'Status',val:'PhD Applicant',sub:'2027 Cycle'},
+
+const DATA = {
+  nodes: [
+    {
+      id:'security', label:'Security', type:'core', layer:0,
+      desc:'Primary research identity. ML is a tool. Threat modeling, adversarial thinking, and system security are the lens through which all work is framed.'
+    },
+    {
+      id:'foca', label:'FOCA', type:'project', layer:1, angle:0,
+      venue:'ICASSP 2026', domain:'Malware Analysis',
+      desc:'Hyperbolic cross-attention for multimodal malware classification across heterogeneous environments.',
+      detail:{
+        problem:'How to robustly classify malware across heterogeneous execution environments?',
+        approach:'Hyperbolic cross-attention over multimodal signals — behavioral, static and dynamic traces fused in curved space.',
+        result:'Accepted ICASSP 2026. State-of-the-art on cross-environment malware benchmarks.',
+        'open question':'Does hyperbolic curvature need per-domain tuning at inference time?'
+      },
+      methods:['multimodal','hyperbolic'], tags:['multimodal','hyperbolic','malware']
+    },
+    {
+      id:'decker', label:'DECKER', type:'project', layer:1, angle:Math.PI/2,
+      venue:'AsiaCCS 2026', domain:'Side-Channel Attacks',
+      desc:'Domain-invariant embeddings for cross-device acoustic keystroke recognition via audio side-channel.',
+      detail:{
+        problem:'Acoustic side-channel attacks degrade on unseen keyboard hardware.',
+        approach:'Domain-invariant embedding space trained with adversarial domain alignment and contrastive loss.',
+        result:'Accepted AsiaCCS 2026. Robust cross-device transfer without target-domain samples.',
+        'open question':'Can zero-shot transfer extend to non-keyboard surfaces?'
+      },
+      methods:['repr','adversarial'], tags:['audio ML','side-channel','domain shift']
+    },
+    {
+      id:'gocoma', label:'GoCoMA', type:'project', layer:1, angle:Math.PI,
+      venue:'ICME 2026', domain:'Code Attribution',
+      desc:'Hyperbolic multimodal fusion for attributing LLM-generated code to authorship and model families.',
+      detail:{
+        problem:'LLM code attribution is confounded by style-mixing and adversarial obfuscation.',
+        approach:'Multimodal fusion of AST, token sequences and semantic embeddings in hyperbolic space.',
+        result:'Accepted ICME 2026. Outperforms flat-space baselines across 12 LLM families.',
+        'open question':'Does attribution survive adversarial prompt-level obfuscation?'
+      },
+      methods:['multimodal','llm','hyperbolic'], tags:['LLMs','code intel','attribution']
+    },
+    {
+      id:'coral', label:'CORAL', type:'project', layer:1, angle:3*Math.PI/2,
+      venue:'AACL-IJCNLP 2025', domain:'Deception Detection',
+      desc:'Socially-aware deception detection using positive–unlabeled learning over conversational structure.',
+      detail:{
+        problem:'Ground-truth deception labels are sparse; most conversational data is unlabeled.',
+        approach:'Positive–unlabeled learning over social graph structure; models role dynamics as features.',
+        result:'Accepted AACL-IJCNLP 2025. Significant gains over fully-supervised baselines.',
+        'open question':'How does the model behave when social structure is adversarially manipulated?'
+      },
+      methods:['repr','nlp'], tags:['NLP','PU learning','deception']
+    },
+    {id:'multimodal',label:'Multimodal ML',type:'method',layer:2,angle:Math.PI/4},
+    {id:'hyperbolic',label:'Hyperbolic Learning',type:'method',layer:2,angle:3*Math.PI/4},
+    {id:'repr',label:'Representation Learning',type:'method',layer:2,angle:5*Math.PI/4},
+    {id:'llm',label:'LLMs',type:'method',layer:2,angle:7*Math.PI/4},
+    {id:'adversarial',label:'Adversarial ML',type:'method',layer:2,angle:0},
+    {id:'nlp',label:'Security NLP',type:'method',layer:2,angle:Math.PI},
+    {id:'pytorch',label:'PyTorch',type:'skill',layer:3,angle:0},
+    {id:'transformers',label:'Transformers',type:'skill',layer:3,angle:Math.PI/5},
+    {id:'cuda',label:'CUDA',type:'skill',layer:3,angle:2*Math.PI/5},
+    {id:'malware',label:'Malware Analysis',type:'skill',layer:3,angle:3*Math.PI/5},
+    {id:'sidechan',label:'Side-Channel',type:'skill',layer:3,angle:4*Math.PI/5},
+    {id:'crypto',label:'Cryptography',type:'skill',layer:3,angle:Math.PI},
+    {id:'poincare',label:'Poincaré Disk',type:'skill',layer:3,angle:6*Math.PI/5},
+    {id:'domain',label:'Domain Adaptation',type:'skill',layer:3,angle:7*Math.PI/5},
+    {id:'binary',label:'Binary Analysis',type:'skill',layer:3,angle:8*Math.PI/5},
+    {id:'python',label:'Python',type:'skill',layer:3,angle:9*Math.PI/5},
   ],
-  projects:[
-    {title:'FOCA',venue:'ICASSP 2026',coord:'28.6°N / 77.2°E',desc:'Hyperbolic cross-attention for multimodal malware classification across heterogeneous environments.',tags:['multimodal','hyperbolic','malware'],detail:{problem:'How to robustly classify malware across heterogeneous execution environments?',approach:'Hyperbolic cross-attention over multimodal signals — behavioral, static and dynamic traces fused in curved space.',result:'Accepted ICASSP 2026. State-of-the-art on cross-environment malware benchmarks.',open:'Does hyperbolic curvature need per-domain tuning at inference time?'}},
-    {title:'DECKER',venue:'AsiaCCS 2026',coord:'34.1°N / 108.9°E',desc:'Domain-invariant embeddings for cross-device acoustic keystroke recognition via audio side-channel.',tags:['audio ML','side-channel','domain shift'],detail:{problem:'Acoustic side-channel attacks degrade on unseen keyboard hardware.',approach:'Domain-invariant embedding space trained with adversarial domain alignment and contrastive loss.',result:'Accepted AsiaCCS 2026. Robust cross-device transfer without target-domain samples.',open:'Can zero-shot transfer extend to non-keyboard surfaces?'}},
-    {title:'GoCoMA',venue:'ICME 2026',coord:'40.7°N / 74.0°W',desc:'Hyperbolic multimodal fusion for attributing LLM-generated code to authorship and model families.',tags:['LLMs','code intel','attribution'],detail:{problem:'LLM code attribution is confounded by style-mixing and adversarial obfuscation.',approach:'Multimodal fusion of AST, token sequences and semantic embeddings in hyperbolic space.',result:'Accepted ICME 2026. Outperforms flat-space baselines across 12 LLM families.',open:'Does attribution survive adversarial prompt-level obfuscation?'}},
-    {title:'CORAL',venue:'AACL-IJCNLP 2025',coord:'22.3°N / 114.2°E',desc:'Socially-aware deception detection using positive–unlabeled learning over conversational structure.',tags:['NLP','PU learning','deception'],detail:{problem:'Ground-truth deception labels are sparse; most conversational data is unlabeled.',approach:'Positive–unlabeled learning over social graph structure; models role dynamics as features.',result:'Accepted AACL-IJCNLP 2025. Significant gains over fully-supervised baselines.',open:'How does the model behave when social structure is adversarially manipulated?'}}
+  edges: [
+    {from:'security',to:'foca'},{from:'security',to:'decker'},
+    {from:'security',to:'gocoma'},{from:'security',to:'coral'},
+    {from:'foca',to:'multimodal'},{from:'foca',to:'hyperbolic'},
+    {from:'decker',to:'repr'},{from:'decker',to:'adversarial'},
+    {from:'gocoma',to:'multimodal'},{from:'gocoma',to:'llm'},{from:'gocoma',to:'hyperbolic'},
+    {from:'coral',to:'repr'},{from:'coral',to:'nlp'},
+    {from:'multimodal',to:'pytorch'},{from:'multimodal',to:'transformers'},
+    {from:'hyperbolic',to:'poincare'},{from:'repr',to:'domain'},
+    {from:'adversarial',to:'malware'},{from:'adversarial',to:'sidechan'},
+    {from:'nlp',to:'python'},{from:'security',to:'crypto'},
+    {from:'security',to:'binary'},{from:'foca',to:'malware'},
+    {from:'decker',to:'sidechan'},{from:'gocoma',to:'cuda'},
   ],
   publications:[
+    {year:'2026',title:'FOCA: Multimodal Malware Classification via Hyperbolic Cross-Attention',venue:'ICASSP 2026'},
     {year:'2026',title:'DECKER: Domain-invariant Embedding for Cross-Keyboard Acoustic Extraction',venue:'AsiaCCS 2026'},
     {year:'2026',title:'GoCoMA: Hyperbolic Multimodal Representation Fusion for Code Attribution',venue:'ICME 2026'},
-    {year:'2026',title:'FOCA: Multimodal Malware Classification via Hyperbolic Cross-Attention',venue:'ICASSP 2026'},
-    {year:'2025',title:'CORAL: Socially-Aware Deception Detection via Positive-Unlabeled Learning',venue:'AACL-IJCNLP 2025'}
+    {year:'2025',title:'CORAL: Socially-Aware Deception Detection via Positive-Unlabeled Learning',venue:'AACL-IJCNLP 2025'},
   ],
-  education:{degree:'M.Tech CS',years:'2024 — 2026',courses:['System Security','Cryptography','Machine Learning','Deep Learning','NLP','Algorithms','OS Design','Data Structures','Computer Networks','Linear Algebra']},
-  skills:{'Machine Learning':{items:['PyTorch','Transformers','HuggingFace','hyperbolic geom.','multimodal fusion'],core:[0,1]},'Security':{items:['malware analysis','side-channel','adversarial ML','binary analysis'],core:[0,2]},'Programming':{items:['Python','C/C++','CUDA','LaTeX','Bash'],core:[0,1]},'Systems':{items:['Linux','Docker','SLURM','dist. training'],core:[]}},
-  blog:[
-    {tag:'Feb 2025 · 9 min',title:"Acoustic Side-Channels Are a Solved Problem. (They Aren't.)",excerpt:'Every new keyboard defeats every old model. Domain shift is the actual unsolved problem.',full:"The classic paper achieved near-perfect accuracy. On the exact keyboard used for training. Across devices, room acoustics, microphones — the story collapses. DECKER was built to answer: can we build a representation that doesn't care about the transduction path? Adversarial domain alignment forces the encoder to discard hardware-specific features. What remains is keystroke identity."},
-    {featured:true,tag:'Apr 2025 · 14 min',title:'Why Hyperbolic Geometry Makes Security Taxonomies Better',excerpt:'Flat embedding spaces assume equidistant relationships. Security malware families are hierarchical — and Euclidean space punishes that assumption silently.',full:'The core insight is that security taxonomies are trees. APT families branch. Malware genera subdivide. When you embed a tree in a sphere, you can represent exponentially more nodes — hyperbolic space grows at the boundary, not the center. The Poincaré disk gives you exactly this: distance from origin encodes generality, angular position encodes category. When we replaced the flat classifier in FOCA with a hyperbolic attention module, the gains were consistent and reproducible. The geometry was doing semantic work the data could not do alone.'},
-    {tag:'Dec 2024 · 11 min',title:'PU Learning Is Underused in Security NLP',excerpt:'When labeled deception data is expensive, treat labeled positives as a noisy subset.',full:"PU learning says: treat your labeled positives as a noisy sample from the true positive distribution. You don't need negative labels. CORAL exploits this to extract signal from conversational data that fully-supervised approaches discard entirely."},
-    {tag:'Oct 2024 · 7 min',title:'On Evaluating LLM Code Attribution at Scale',excerpt:'Benchmark design determines the conclusion. Most attribution evals have a style-leakage problem.',full:'If training and test splits share the same prompts, your model learns prompt fingerprints, not style. GoCoMA uses strict separation: held-out prompt types, held-out model families, adversarial obfuscation at inference.'}
-  ],
-  thoughts:[
-    {key:'problem',text:'How do we make ML models robust to the long tail of adversarial variation?'},
-    {key:'approach',text:'Hyperbolic spaces encode hierarchy. Curved geometry gives better structure for security taxonomies.'},
-    {key:'limitation',text:'Domain shift at inference remains the hard problem. Cross-device models degrade on unseen hardware.'},
-    {key:'future',text:'One foundation encoder for malware, network flows, and behavioral traces — unified threat representation.'},
-    {key:'open q.',text:'Can LLM attribution survive adversarial prompt-level obfuscation at inference time?'},
-    {key:'next dir.',text:'Causal reasoning over behavioral traces — moving beyond correlation toward mechanism.'}
-  ],
+  education:{degree:'M.Tech CS',years:'2024 — 2026',courses:['Machine Learning','Deep Learning','System Security','Cryptography','NLP','Algorithms','OS Design','Data Structures','Computer Networks','Linear Algebra']},
+  skills:{
+    'Machine Learning':{items:['PyTorch','Transformers','HuggingFace','hyperbolic geom.','multimodal fusion'],core:[0,1]},
+    'Security':{items:['malware analysis','side-channel','adversarial ML','binary analysis'],core:[0,2]},
+    'Programming':{items:['Python','C/C++','CUDA','LaTeX','Bash'],core:[0,1]},
+    'Systems':{items:['Linux','Docker','SLURM','dist. training'],core:[]},
+  },
   contact:[
     {key:'email',val:'bikrant.acc.edu@icloud.com',href:'mailto:bikrant.acc.edu@icloud.com'},
     {key:'linkedin',val:'vikrant-vikram-a07418185',href:'https://linkedin.com/in/vikrant-vikram-a07418185'},
     {key:'github',val:'github/vikrant-vikram',href:'https://github.com/vikrant-vikram'},
-    {key:'signal',val:'on request',href:null}
-  ]
+    {key:'signal',val:'on request',href:null},
+  ],
 };
 
-/* ════════════ COMPASS CANVAS ════════════ */
-(()=>{
-  const c=document.getElementById('compassC'),ctx=c.getContext('2d');
-  let W,H,t=0;
-  const resize=()=>{W=c.width=c.offsetWidth;H=c.height=c.offsetHeight};
-  resize();window.addEventListener('resize',resize);
-  let mx=W/2,my=H/2;
-  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY},{passive:true});
 
-  const drawCompass=(cx,cy,r)=>{
-    // outer circle
-    ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
-    ctx.strokeStyle='rgba(26,23,16,.08)';ctx.lineWidth=1;ctx.stroke();
-    ctx.beginPath();ctx.arc(cx,cy,r*.65,0,Math.PI*2);
-    ctx.strokeStyle='rgba(26,23,16,.05)';ctx.lineWidth=1;ctx.stroke();
-    ctx.beginPath();ctx.arc(cx,cy,r*.35,0,Math.PI*2);
-    ctx.strokeStyle='rgba(26,23,16,.06)';ctx.lineWidth=1;ctx.stroke();
-    ctx.beginPath();ctx.arc(cx,cy,r*.08,0,Math.PI*2);
-    ctx.fillStyle='rgba(27,107,107,.12)';ctx.fill();
+const LAYER_R = [0, 3.8, 6.8, 11.2];
+const LAYER_Y = [0, 0, 0, 0];
 
-    // cardinal lines
-    const dirs=8;
-    for(let i=0;i<dirs;i++){
-      const a=i/dirs*Math.PI*2-Math.PI/2;
-      const inner=i%2===0?r*.12:r*.18;
-      ctx.beginPath();
-      ctx.moveTo(cx+Math.cos(a)*inner,cy+Math.sin(a)*inner);
-      ctx.lineTo(cx+Math.cos(a)*r*.96,cy+Math.sin(a)*r*.96);
-      ctx.strokeStyle=i%2===0?'rgba(26,23,16,.15)':'rgba(26,23,16,.07)';
-      ctx.lineWidth=i%2===0?1:.7;ctx.stroke();
-    }
-    // N pointer
-    const na=-Math.PI/2;
-    ctx.beginPath();
-    ctx.moveTo(cx+Math.cos(na)*r*.02,cy+Math.sin(na)*r*.02);
-    ctx.lineTo(cx+Math.cos(na-0.2)*r*.28,cy+Math.sin(na-0.2)*r*.28);
-    ctx.lineTo(cx+Math.cos(na)*r*.55,cy+Math.sin(na)*r*.55);
-    ctx.lineTo(cx+Math.cos(na+0.2)*r*.28,cy+Math.sin(na+0.2)*r*.28);
-    ctx.closePath();
-    ctx.fillStyle='rgba(27,107,107,.35)';ctx.fill();
-    // S pointer
-    const sa=Math.PI/2;
-    ctx.beginPath();
-    ctx.moveTo(cx+Math.cos(sa)*r*.02,cy+Math.sin(sa)*r*.02);
-    ctx.lineTo(cx+Math.cos(sa-0.2)*r*.28,cy+Math.sin(sa-0.2)*r*.28);
-    ctx.lineTo(cx+Math.cos(sa)*r*.45,cy+Math.sin(sa)*r*.45);
-    ctx.lineTo(cx+Math.cos(sa+0.2)*r*.28,cy+Math.sin(sa+0.2)*r*.28);
-    ctx.closePath();
-    ctx.fillStyle='rgba(26,23,16,.12)';ctx.fill();
-    // N label
-    ctx.fillStyle='rgba(27,107,107,.5)';
-    ctx.font=`bold ${r*.07}px Space Mono,monospace`;
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('N',cx,cy-r*.68);
+function computeNodePosition(node) {
+  if (node.layer === 0) return new THREE.Vector3(0, 0, 0);
+  const r = LAYER_R[node.layer];
+  const a = node.angle || 0;
+  const yJitter = node.layer === 3 ? Math.sin(node.angle * 2.5) * 1.2 : 0;
+  return new THREE.Vector3(
+    r * Math.cos(a),
+    LAYER_Y[node.layer] + yJitter,
+    r * Math.sin(a)
+  );
+}
+
+/* ═══════════════════════════════════════════════════
+   THREE.JS SETUP
+═══════════════════════════════════════════════════ */
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x030303, 1);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x030303, 0.028);
+
+const camera = new THREE.PerspectiveCamera(52, window.innerWidth/window.innerHeight, 0.1, 300);
+camera.position.set(0, 14, 36);
+camera.lookAt(0, 0, 0);
+
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+
+scene.add(new THREE.AmbientLight(0xEDE8DF, 0.15));
+const dLight = new THREE.DirectionalLight(0xEDE8DF, 0.5);
+dLight.position.set(5, 10, 5);
+scene.add(dLight);
+const tLight = new THREE.PointLight(0x0E7878, 6, 18);
+tLight.position.set(0, 1, 0);
+scene.add(tLight);
+
+
+function makeGlowTexture(r, g, b) {
+  const sz = 128;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = sz;
+  const ctx = cv.getContext('2d');
+  const gr = ctx.createRadialGradient(sz/2, sz/2, 0, sz/2, sz/2, sz/2);
+  gr.addColorStop(0, `rgba(${r},${g},${b},1)`);
+  gr.addColorStop(0.4, `rgba(${r},${g},${b},0.3)`);
+  gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  ctx.fillStyle = gr;
+  ctx.fillRect(0, 0, sz, sz);
+  return new THREE.CanvasTexture(cv);
+}
+
+const coreGlowTex = makeGlowTexture(14, 120, 120);
+const projGlowTex = makeGlowTexture(180, 168, 148);
+const goldGlowTex = makeGlowTexture(196, 154, 40);
+
+const MAT = {
+  core: new THREE.MeshStandardMaterial({color:0xEDE8DF, emissive:0x0E7878, emissiveIntensity:0.4, roughness:0.3, metalness:0.2}),
+  project: new THREE.MeshStandardMaterial({color:0xD8D3C8, emissive:0x1A1814, emissiveIntensity:0.1, roughness:0.5, metalness:0.1}),
+  method: new THREE.MeshStandardMaterial({color:0x0E7878, emissive:0x0E7878, emissiveIntensity:0.3, roughness:0.4, metalness:0.3}),
+  skill: new THREE.MeshStandardMaterial({color:0x404038, roughness:0.8}),
+  edge: new THREE.LineBasicMaterial({color:0xEDE8DF, transparent:true, opacity:0.06}),
+  edgeActive: new THREE.LineBasicMaterial({color:0x0E7878, transparent:true, opacity:0.45}),
+  pubRing: new THREE.MeshBasicMaterial({color:0xC49A28, transparent:true, opacity:0.12, wireframe:false}),
+  pubNode: new THREE.MeshBasicMaterial({color:0xC49A28}),
+};
+
+
+const nodeMeshes = {};   // id → THREE.Mesh
+const edgeLines = [];    // {line, fromId, toId}
+const nodePositions = {}; // id → THREE.Vector3
+
+const graphGroup = new THREE.Group();
+scene.add(graphGroup);
+
+
+DATA.nodes.forEach(n => {
+  nodePositions[n.id] = computeNodePosition(n);
+});
+
+
+DATA.nodes.forEach(n => {
+  const pos = nodePositions[n.id];
+  let geo, mat, size;
+
+  if (n.type === 'core')    { size = 0.55; geo = new THREE.IcosahedronGeometry(size, 2); mat = MAT.core.clone(); }
+  else if (n.type === 'project') { size = 0.3;  geo = new THREE.IcosahedronGeometry(size, 2); mat = MAT.project.clone(); }
+  else if (n.type === 'method')  { size = 0.18; geo = new THREE.IcosahedronGeometry(size, 1); mat = MAT.method.clone(); }
+  else                           { size = 0.09; geo = new THREE.IcosahedronGeometry(size, 1); mat = MAT.skill.clone(); }
+
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.copy(pos);
+  mesh.userData = { nodeData: n, baseSize: size, hovered: false };
+  graphGroup.add(mesh);
+  nodeMeshes[n.id] = mesh;
+
+  const glowTex = n.type === 'core' ? coreGlowTex : (n.type === 'method' ? coreGlowTex : projGlowTex);
+  const glowMat = new THREE.SpriteMaterial({
+    map: glowTex,
+    blending: THREE.AdditiveBlending,
+    transparent: true,
+    opacity: n.type === 'core' ? 0.7 : n.type === 'project' ? 0.28 : 0.15,
+    depthWrite: false,
+  });
+  const glow = new THREE.Sprite(glowMat);
+  const gs = size * (n.type === 'core' ? 8 : 5);
+  glow.scale.set(gs, gs, 1);
+  glow.position.copy(pos);
+  graphGroup.add(glow);
+  mesh.userData.glow = glow;
+  mesh.userData.glowMat = glowMat;
+
+  if (n.type === 'core') {
+    const ringGeo = new THREE.TorusGeometry(1.2, 0.008, 8, 80);
+    const ringMat = new THREE.MeshBasicMaterial({color:0x0E7878, transparent:true, opacity:0.35});
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.copy(pos);
+    graphGroup.add(ring);
+    mesh.userData.ring = ring;
+
+    const ring2Geo = new THREE.TorusGeometry(1.8, 0.004, 8, 80);
+    const ring2Mat = new THREE.MeshBasicMaterial({color:0x0E7878, transparent:true, opacity:0.15});
+    const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+    ring2.rotation.x = Math.PI / 2;
+    ring2.position.copy(pos);
+    graphGroup.add(ring2);
+  }
+
+  if (n.type === 'project') {
+    const oGeo = new THREE.TorusGeometry(size + 0.25, 0.004, 6, 40);
+    const oMat = new THREE.MeshBasicMaterial({color:0xEDE8DF, transparent:true, opacity:0.12});
+    const orbit = new THREE.Mesh(oGeo, oMat);
+    orbit.rotation.x = Math.PI / 3;
+    orbit.rotation.y = n.angle || 0;
+    orbit.position.copy(pos);
+    graphGroup.add(orbit);
+  }
+});
+
+function createEdge(fromId, toId, material) {
+  const p0 = nodePositions[fromId];
+  const p1 = nodePositions[toId];
+  if (!p0 || !p1) return null;
+
+
+  const mid = p0.clone().add(p1).multiplyScalar(0.5);
+  const dir = p1.clone().sub(p0).normalize();
+  const perp = new THREE.Vector3(-dir.z, dir.y * 0.3, dir.x);
+  const cp = mid.clone().addScaledVector(perp, mid.length() * 0.25);
+
+  const curve = new THREE.QuadraticBezierCurve3(p0, cp, p1);
+  const pts = curve.getPoints(24);
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat = material.clone();
+  const line = new THREE.Line(geo, mat);
+  graphGroup.add(line);
+  return {line, fromId, toId, mat};
+}
+
+DATA.edges.forEach(e => {
+  const edgeObj = createEdge(e.from, e.to, MAT.edge);
+  if (edgeObj) edgeLines.push(edgeObj);
+});
+
+const pubGroup = new THREE.Group();
+pubGroup.position.y = -1.5;
+scene.add(pubGroup);
+
+const pubRingGeo = new THREE.TorusGeometry(8, 0.012, 8, 120);
+const pubRingMesh = new THREE.Mesh(pubRingGeo, MAT.pubRing.clone());
+pubRingMesh.rotation.x = Math.PI / 2;
+pubGroup.add(pubRingMesh);
+
+DATA.publications.forEach((pub, i) => {
+  const angle = (i / DATA.publications.length) * Math.PI * 2;
+  const px = 8 * Math.cos(angle);
+  const pz = 8 * Math.sin(angle);
+  const pGeo = new THREE.IcosahedronGeometry(0.12, 1);
+  const pMat = new THREE.MeshBasicMaterial({color:0xC49A28});
+  const pMesh = new THREE.Mesh(pGeo, pMat);
+  pMesh.position.set(px, 0, pz);
+  pubGroup.add(pMesh);
+
+  // Gold glow
+  const pgMat = new THREE.SpriteMaterial({map:goldGlowTex, blending:THREE.AdditiveBlending, transparent:true, opacity:0.5, depthWrite:false});
+  const pgSprite = new THREE.Sprite(pgMat);
+  pgSprite.scale.set(1.2, 1.2, 1);
+  pgSprite.position.set(px, 0, pz);
+  pubGroup.add(pgSprite);
+});
+
+const poDotsEl = document.getElementById('po-dots');
+DATA.publications.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'po-dot' + (i===0?' active':'');
+  poDotsEl.appendChild(d);
+});
+
+const particleCount = 600;
+const pPositions = new Float32Array(particleCount * 3);
+for (let i = 0; i < particleCount; i++) {
+  const r = 15 + Math.random() * 50;
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos(2 * Math.random() - 1);
+  pPositions[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+  pPositions[i*3+1] = r * Math.cos(phi);
+  pPositions[i*3+2] = r * Math.sin(phi) * Math.sin(theta);
+}
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPositions, 3));
+const pMat = new THREE.PointsMaterial({color:0xEDE8DF, size:0.06, transparent:true, opacity:0.3, sizeAttenuation:true});
+scene.add(new THREE.Points(pGeo, pMat));
+
+
+const labelsContainer = document.getElementById('node-labels');
+const labelEls = {};
+
+DATA.nodes.forEach(n => {
+  const el = document.createElement('div');
+  el.className = 'nl ' + n.type + '-lbl';
+  el.id = 'lbl-' + n.id;
+  el.textContent = n.label;
+  el.style.pointerEvents = 'none';
+  labelsContainer.appendChild(el);
+  labelEls[n.id] = el;
+});
+
+function updateLabels(scrollProgress) {
+  const showCore    = scrollProgress > 0.12;
+  const showProject = scrollProgress > 0.28;
+  const showMethod  = scrollProgress > 0.45;
+  const showSkill   = scrollProgress > 0.62;
+
+  DATA.nodes.forEach(n => {
+    const mesh = nodeMeshes[n.id];
+    const el = labelEls[n.id];
+    if (!mesh || !el) return;
+
+    const show = (n.type==='core' && showCore) ||
+                 (n.type==='project' && showProject) ||
+                 (n.type==='method' && showMethod) ||
+                 (n.type==='skill' && showSkill);
+
+    if (!show) { el.style.opacity = '0'; return; }
+
+    const v = mesh.position.clone().project(camera);
+    const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+    const y = -(v.y * 0.5 - 0.5) * window.innerHeight;
+
+    if (v.z > 1) { el.style.opacity = '0'; return; }
+
+    const offset = n.type === 'core' ? 28 : n.type === 'project' ? 20 : 14;
+    el.style.left = x + 'px';
+    el.style.top  = (y - offset) + 'px';
+    el.style.opacity = mesh.userData.hovered ? '1' : (n.type==='core'?'0.85':n.type==='project'?'0.55':'0.3');
+  });
+}
+
+
+const CAM_KF = [
+  {t:0,    p:[0,14,36],  lk:[0,0,0]},   // Far void
+  {t:0.10, p:[0,9,22],   lk:[0,0,0]},   // Boot complete → approach
+  {t:0.22, p:[0,4,9],    lk:[0,0,0]},   // Close to Security core
+  {t:0.35, p:[8,5,14],   lk:[0,0,0]},   // Orbit 1 — projects emerge
+  {t:0.48, p:[-6,4,12],  lk:[0,0,0]},   // Orbit 2
+  {t:0.58, p:[5,6,14],   lk:[3,0,0]},   // Look toward FOCA cluster
+  {t:0.68, p:[0,8,18],   lk:[0,0,0]},   // Annotation layer visible
+  {t:0.80, p:[-4,11,24], lk:[0,0,0]},   // Pull back — pub ring visible
+  {t:0.92, p:[0,16,36],  lk:[0,0,0]},   // Wide overview
+  {t:1.00, p:[0,20,44],  lk:[0,0,0]},   // Fade to DOM
+];
+
+let scrollY = 0;
+const SCROLL_HEIGHT = 700;
+
+window.addEventListener('scroll', () => {
+  scrollY = window.scrollY;
+}, {passive:true});
+
+function getScrollProgress() {
+  const total = document.getElementById('scroll-space').offsetHeight;
+  return Math.min(Math.max(scrollY / (total || 1), 0), 1);
+}
+
+function interpolateCamera(t) {
+  let i = 0;
+  while (i < CAM_KF.length - 2 && CAM_KF[i+1].t <= t) i++;
+  const kf0 = CAM_KF[i], kf1 = CAM_KF[i+1] || kf0;
+  const span = kf1.t - kf0.t;
+  const local = span > 0 ? (t - kf0.t) / span : 0;
+  const ease = local * local * (3 - 2 * local); // smoothstep
+  return {
+    pos: new THREE.Vector3(...kf0.p).lerp(new THREE.Vector3(...kf1.p), ease),
+    lk:  new THREE.Vector3(...kf0.lk).lerp(new THREE.Vector3(...kf1.lk), ease),
   };
+}
 
-  // Draw connection lines from center to paper sites (animated)
-  const sites=[
-    {ax:.18,ay:.22},{ax:.78,ay:.2},{ax:.2,ay:.75},{ax:.8,ay:.76}
-  ];
-  let lineProgress=0;
+/* ═══════════════════════════════════════════════════
+   MOUSE PARALLAX
+═══════════════════════════════════════════════════ */
+let mouseX = 0, mouseY = 0;
+document.addEventListener('mousemove', e => {
+  mouseX = (e.clientX / window.innerWidth  - 0.5) * 2;
+  mouseY = -(e.clientY / window.innerHeight - 0.5) * 2;
+}, {passive:true});
 
-  const draw=()=>{
-    ctx.clearRect(0,0,W,H);
-    t++;
-    // parallax layers
-    const px=(mx/W-.5)*14,py=(my/H-.5)*10;
+/* ═══════════════════════════════════════════════════
+   RAYCASTER — HOVER & CLICK
+═══════════════════════════════════════════════════ */
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const tooltip = document.getElementById('tooltip');
+let hoveredId = null;
+let allMeshList = Object.values(nodeMeshes);
 
-    // large compass rose
-    ctx.save();ctx.translate(W/2+px*.4,H*.44+py*.3);
-    drawCompass(0,0,Math.min(W,H)*.32);
-    ctx.restore();
+document.addEventListener('mousemove', e => {
+  mouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  tooltip.style.left = e.clientX + 'px';
+  tooltip.style.top  = e.clientY + 'px';
+}, {passive:true});
 
-    // small corner compasses
-    [[.08,.1,.06],[.92,.1,.05],[.08,.88,.04],[.92,.88,.04]].forEach(([fx,fy,fr])=>{
-      ctx.save();ctx.translate(W*fx+px*.2,H*fy+py*.15);
-      drawCompass(0,0,Math.min(W,H)*fr);
-      ctx.restore();
-    });
+document.addEventListener('click', e => {
+  if (e.target.closest('#panel') || e.target.closest('#boot')) return;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(allMeshList);
+  if (hits.length > 0) {
+    const mesh = hits[0].object;
+    const nd = mesh.userData.nodeData;
+    if (nd && nd.type === 'project') openPanel(nd);
+    else closePanel();
+  } else {
+    closePanel();
+  }
+});
 
-    // animated dashed lines from center to sites
-    lineProgress=Math.min(lineProgress+.012,1);
-    const cx2=W/2+px*.3,cy2=H*.44+py*.25;
-    sites.forEach((s,i)=>{
-      const tx=W*s.ax,ty=H*s.ay;
-      const prog=Math.max(0,Math.min(1,(lineProgress-.1*i)/.6));
-      if(prog<=0)return;
-      const endX=cx2+(tx-cx2)*prog,endY=cy2+(ty-cy2)*prog;
-      ctx.beginPath();ctx.setLineDash([4,8]);
-      ctx.moveTo(cx2,cy2);ctx.lineTo(endX,endY);
-      ctx.strokeStyle='rgba(27,107,107,.18)';ctx.lineWidth=1;ctx.stroke();
-      ctx.setLineDash([]);
-      // terminal dot
-      if(prog>.9){
-        ctx.beginPath();ctx.arc(tx,ty,4,0,Math.PI*2);
-        ctx.fillStyle='rgba(27,107,107,.35)';ctx.fill();
-        ctx.beginPath();ctx.arc(tx,ty,4+(t%60)*0.08,0,Math.PI*2);
-        ctx.strokeStyle=`rgba(27,107,107,${.25*(1-(t%60)/60)})`;
-        ctx.lineWidth=1;ctx.stroke();
+function updateHover() {
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(allMeshList);
+
+  const newHoveredId = hits.length > 0 ? hits[0].object.userData?.nodeData?.id : null;
+  if (newHoveredId === hoveredId) return;
+  hoveredId = newHoveredId;
+
+  // Reset all edges
+  edgeLines.forEach(e => {
+    e.mat.color.setHex(0xEDE8DF);
+    e.mat.opacity = 0.06;
+  });
+
+  // Reset all nodes
+  DATA.nodes.forEach(n => {
+    const m = nodeMeshes[n.id];
+    if (!m) return;
+    m.userData.hovered = false;
+    if (m.userData.glowMat) {
+      m.userData.glowMat.opacity = n.type==='core'?0.7:n.type==='project'?0.28:0.15;
+    }
+  });
+
+  if (hoveredId) {
+    const nd = DATA.nodes.find(n=>n.id===hoveredId);
+    // Highlight connected edges
+    const connectedIds = new Set([hoveredId]);
+    edgeLines.forEach(e => {
+      if (e.fromId === hoveredId || e.toId === hoveredId) {
+        e.mat.color.setHex(0x0E7878);
+        e.mat.opacity = 0.55;
+        connectedIds.add(e.fromId);
+        connectedIds.add(e.toId);
       }
     });
-
-    // mouse-following crosshair
-    ctx.beginPath();ctx.setLineDash([3,6]);
-    ctx.moveTo(mx,0);ctx.lineTo(mx,H);
-    ctx.strokeStyle='rgba(26,23,16,.05)';ctx.lineWidth=1;ctx.stroke();
-    ctx.beginPath();ctx.moveTo(0,my);ctx.lineTo(W,my);ctx.stroke();
-    ctx.setLineDash([]);
-
-    requestAnimationFrame(draw);
-  };draw();
-})();
-
-/* ════════════ TOPO CANVAS ════════════ */
-(()=>{
-  const c=document.getElementById('topoC'),ctx=c.getContext('2d');
-  const resize=()=>{c.width=c.offsetWidth;c.height=c.offsetHeight};
-  resize();window.addEventListener('resize',resize);
-  const draw=()=>{
-    ctx.clearRect(0,0,c.width,c.height);
-    const W=c.width,H=c.height;
-    // concentric ellipses simulating topo contours
-    for(let i=1;i<=8;i++){
-      ctx.beginPath();
-      ctx.ellipse(W*.38,H*.5,W*.08*i,H*.06*i,-.15,0,Math.PI*2);
-      ctx.strokeStyle=`rgba(26,23,16,${.025*(1-i/10)})`;ctx.lineWidth=1;ctx.stroke();
-    }
-    for(let i=1;i<=6;i++){
-      ctx.beginPath();
-      ctx.ellipse(W*.72,H*.4,W*.07*i,H*.05*i,.1,0,Math.PI*2);
-      ctx.strokeStyle=`rgba(27,107,107,${.02*(1-i/8)})`;ctx.lineWidth=1;ctx.stroke();
-    }
-  };draw();
-  window.addEventListener('resize',draw);
-})();
-
-/* ════════════ BG CANVAS — ambient particles ════════════ */
-(()=>{
-  const c=document.getElementById('bgC'),ctx=c.getContext('2d');
-  let W,H,pts=[];
-  const resize=()=>{W=c.width=window.innerWidth;H=c.height=window.innerHeight};
-  resize();window.addEventListener('resize',resize);
-  for(let i=0;i<35;i++) pts.push({
-    x:Math.random()*W,y:Math.random()*H,
-    vx:(Math.random()-.5)*.08,vy:(Math.random()-.5)*.08,
-    r:Math.random()*.7+.3
-  });
-  const draw=()=>{
-    ctx.clearRect(0,0,W,H);
-    pts.forEach(p=>{
-      p.x+=p.vx;p.y+=p.vy;
-      if(p.x<0)p.x=W;if(p.x>W)p.x=0;
-      if(p.y<0)p.y=H;if(p.y>H)p.y=0;
-      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.fillStyle='rgba(27,107,107,.06)';ctx.fill();
+    // Highlight connected nodes
+    connectedIds.forEach(id => {
+      const m = nodeMeshes[id];
+      if (m) {
+        m.userData.hovered = true;
+        if (m.userData.glowMat) m.userData.glowMat.opacity = 0.85;
+      }
     });
-    requestAnimationFrame(draw);
-  };draw();
-})();
-
-/* ════════════ CURSOR ════════════ */
-(()=>{
-  const cur=document.getElementById('CUR');
-  const lag=document.getElementById('Clag');
-  let tx=0,ty=0,lx=0,ly=0;
-  document.addEventListener('mousemove',e=>{tx=e.clientX;ty=e.clientY},{passive:true});
-  const loop=()=>{
-    lx+=(tx-lx)*.14;ly+=(ty-ly)*.14;
-    cur.style.transform=`translate(${tx}px,${ty}px)`;
-    lag.style.transform=`translate(${(lx-tx)}px,${(ly-ty)}px) translate(-50%,-50%)`;
-    requestAnimationFrame(loop);
-  };loop();
-  const ring=document.getElementById('Ccircle');
-  document.querySelectorAll('a,.scard,.bs-feat,.note-card').forEach(el=>{
-    el.addEventListener('mouseenter',()=>{ring.style.width='46px';ring.style.height='46px';ring.style.borderColor='rgba(139,58,26,.5)'});
-    el.addEventListener('mouseleave',()=>{ring.style.width='28px';ring.style.height='28px';ring.style.borderColor='rgba(27,107,107,.45)'});
-  });
-})();
-
-/* ════════════ CLOCK ════════════ */
-const tick=()=>{
-  const n=new Date(),p=v=>String(v).padStart(2,'0');
-  const el=document.getElementById('hero-clock');
-  if(el)el.textContent=`${p(n.getUTCHours())}:${p(n.getUTCMinutes())}:${p(n.getUTCSeconds())} UTC`;
-};
-setInterval(tick,1000);tick();
-
-/* ════════════ TICKS ════════════ */
-function makeTicks(){
-  const nt=16,nv=10;
-  document.getElementById('ticks-t').innerHTML=Array(nt).fill('<div class="tick"></div>').join('');
-  document.getElementById('ticks-b').innerHTML=Array(nt).fill('<div class="tick"></div>').join('');
-  document.getElementById('ticks-l').innerHTML=Array(nv).fill('<div class="tick-v"></div>').join('');
-  document.getElementById('ticks-r').innerHTML=Array(nv).fill('<div class="tick-v"></div>').join('');
-}
-
-/* ════════════ BUILD ════════════ */
-function build(){
-  makeTicks();
-
-  // name slide
-  setTimeout(()=>{
-    document.getElementById('mn1')?.classList.add('up');
-    document.getElementById('mn2')?.classList.add('up');
-  },200);
-  // footnotes
-  setTimeout(()=>document.querySelectorAll('.hero-fn').forEach(el=>el.classList.add('in')),600);
-
-  // strip
-  const strip=document.getElementById('hero-strip');
-  strip.innerHTML=D.strip.map(s=>`
-    <div class="hs-cell">
-      <div class="hs-label">${s.label}</div>
-      <div class="hs-val">${s.val}</div>
-      ${s.sub?`<div class="hs-sub">${s.sub}</div>`:''}
-    </div>`).join('');
-
-  // research
-  document.getElementById('rc').textContent=`— ${D.projects.length} survey sites`;
-  const sg=document.getElementById('survey-grid');
-  D.projects.forEach((p,i)=>{
-    const el=document.createElement('div');
-    el.className='scard rv d'+(i%3+1);
-    el.innerHTML=`
-      <div class="site-marker" title="survey site">0${i+1}</div>
-      <div class="sc-pad">
-        <div class="sc-coord">${p.coord}</div>
-        <div class="sc-title">${p.title}</div>
-        <div class="sc-venue">${p.venue}</div>
-        <div class="sc-desc">${p.desc}</div>
-        <div class="sc-tags">${p.tags.map(t=>`<span class="sc-tag">${t}</span>`).join('')}</div>
-      </div>
-      <div class="sc-foot"><span id="scl${i}">Read Abstract</span><span class="sc-arr">↓</span></div>
-      <div class="sc-drawer">
-        <div class="sc-di">
-          ${Object.entries(p.detail).map(([k,v])=>`
-            <div class="sc-dr">
-              <div class="sc-drk">${k==='open'?'open question':k}</div>
-              <div class="sc-drv">${v}</div>
-            </div>`).join('')}
-        </div>
-      </div>`;
-    el.querySelector('.sc-foot').addEventListener('click',()=>{
-      const o=el.classList.toggle('open');
-      document.getElementById('scl'+i).textContent=o?'Close':'Read Abstract';
-    });
-    sg.appendChild(el);
-  });
-
-  // legend tape
-  const lti=D.publications.map(p=>`<span class="lt-item">${p.title} <b>${p.venue}</b></span>`).join('');
-  document.getElementById('lt').innerHTML=lti+lti;
-  document.getElementById('pc').textContent=`— ${D.publications.length} verified`;
-
-  // ledger
-  const ld=document.getElementById('ledger');
-  D.publications.forEach((p,i)=>{
-    const el=document.createElement('div');el.className='lrow rv d'+(i+1);
-    el.innerHTML=`<div class="lyr">${p.year}</div><div class="lt">${p.title}</div><div class="lv">${p.venue}</div>`;
-    ld.appendChild(el);
-  });
-
-  // atlas
-  let skH='';
-  Object.entries(D.skills).forEach(([cat,{items,core}])=>{
-    skH+=`<div class="skb rv"><div class="skcat">${cat}</div><div class="skts">${items.map((s,j)=>`<span class="skt${core.includes(j)?' core':''}">${s}</span>`).join('')}</div></div>`;
-  });
-  document.getElementById('atlas').innerHTML=`
-    <div class="atlas-l">
-      <div class="edu-huge rv">M.<em>Tech</em><br>CS</div>
-      <div class="edu-yr rv d2">${D.education.years}</div>
-      <div class="courses rv d3">${D.education.courses.map(c=>`<span class="crs">${c}</span>`).join('')}</div>
-    </div>
-    <div class="atlas-r">${skH}</div>`;
-
-  // blog
-  document.getElementById('bc').textContent=`— ${D.blog.length} entries`;
-  const feat=D.blog[0],rest=D.blog.slice(1);
-  document.getElementById('blog-wrap').innerHTML=`
-    <div class="broadsheet">
-      <div class="bs-feat${feat.full?' hf':''}" id="bsf">
-        <div>
-          <div class="n-tag">${feat.tag} · Featured</div>
-          <div class="n-h">${feat.title}</div>
-          <div class="n-exc">${feat.excerpt}
-            ${feat.full?`<div class="n-expand"><div class="n-full">${feat.full}</div></div>`:''}
-          </div>
-        </div>
-        <div class="n-read">read essay →</div>
-      </div>
-      <div class="bs-div"></div>
-      <div class="bs-aside">
-        <div>
-          <div class="bsa-label">Central Argument</div>
-          <div class="bsa-big">Geometry<br>as<br>Inductive<br>Bias</div>
-        </div>
-        <div class="bsa-sub">The embedding space is a modelling choice. Most practitioners never examine it.</div>
-      </div>
-    </div>
-    <div class="notes-grid">
-      ${rest.map((b,i)=>`
-        <div class="note-card${b.full?' hf':''}" id="nc${i}">
-          <div class="n-tag">${b.tag}</div>
-          <div class="n-h">${b.title}</div>
-          <div class="n-exc">${b.excerpt}
-            ${b.full?`<div class="n-expand"><div class="n-full">${b.full}</div></div>`:''}
-          </div>
-          <div class="ni-read">read →</div>
-        </div>`).join('')}
-    </div>`;
-
-  const bsf=document.getElementById('bsf');
-  if(bsf&&feat.full){
-    bsf.style.cursor='pointer';
-    bsf.addEventListener('click',()=>{
-      bsf.classList.toggle('open');
-      bsf.querySelector('.n-read').textContent=bsf.classList.contains('open')?'collapse ↑':'read essay →';
-    });
+    // Tooltip
+    tooltip.textContent = nd?.label || '';
+    tooltip.classList.add('vis');
+    document.body.style.cursor = nd?.type==='project' ? 'pointer' : 'default';
+  } else {
+    tooltip.classList.remove('vis');
+    document.body.style.cursor = 'default';
   }
-  rest.forEach((_,i)=>{
-    const el=document.getElementById('nc'+i);
-    if(!el||!el.classList.contains('hf'))return;
-    el.addEventListener('click',()=>{
-      el.classList.toggle('open');
-      el.querySelector('.ni-read').textContent=el.classList.contains('open')?'collapse ↑':'read →';
-    });
+}
+
+
+function openPanel(nd) {
+  const pc = document.getElementById('panel-content');
+  pc.innerHTML = `
+    <div class="pc-eyebrow">${nd.domain || nd.type} · ${nd.venue || ''}</div>
+    <div class="pc-title">${nd.label}</div>
+    ${nd.venue ? `<div class="pc-venue">${nd.venue}</div>` : ''}
+    <div class="pc-desc">${nd.desc || ''}</div>
+    ${nd.detail ? `<div class="pc-divider"></div>${Object.entries(nd.detail).map(([k,v])=>`
+      <div class="pc-row">
+        <div class="pc-row-key">${k}</div>
+        <div class="pc-row-val">${v}</div>
+      </div>`).join('')}` : ''}
+    ${nd.tags ? `<div class="pc-tags">${nd.tags.map(t=>`<span class="pc-tag">${t}</span>`).join('')}</div>` : ''}
+  `;
+  document.getElementById('panel').classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('panel').classList.remove('open');
+}
+
+
+function buildDOM() {
+  // Publications
+  const pl = document.getElementById('pub-list');
+  DATA.publications.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'pub-row';
+    el.innerHTML = `<div class="pub-yr">${p.year}</div><div class="pub-title">${p.title}</div><div class="pub-venue">${p.venue}</div>`;
+    pl.appendChild(el);
   });
 
-  // questions
-  const qg=document.getElementById('q-grid');
-  D.thoughts.forEach((t,i)=>{
-    const el=document.createElement('div');el.className='q-cell rv d'+(i%4+1);
-    el.setAttribute('data-n',['i','ii','iii','iv','v','vi'][i]);
-    el.innerHTML=`<div class="q-key">${t.key}</div><div class="q-txt">${t.text}</div>`;
-    qg.appendChild(el);
+  // Foundation
+  let skH = '';
+  Object.entries(DATA.skills).forEach(([cat,{items,core}]) => {
+    skH += `<div class="sk-block"><div class="sk-cat">${cat}</div><div class="sk-tags">${
+      items.map((s,j)=>`<span class="sk-tag${core.includes(j)?' core':''}">${s}</span>`).join('')
+    }</div></div>`;
   });
+  document.getElementById('found-grid').innerHTML = `
+    <div class="found-l">
+      <div>
+        <div class="edu-huge">B.<em>Tech</em><br>CS</div>
+        <div class="edu-yr">${DATA.education.years}</div>
+      </div>
+      <div class="courses">${DATA.education.courses.map(c=>`<span class="crs">${c}</span>`).join('')}</div>
+    </div>
+    <div class="found-r">${skH}</div>`;
 
-  // contact
-  const tls=[
-    `<span class="td">—</span> survey complete`,
-    `<span class="td">—</span> cartographer: <span class="tg">Vikrant Vikram</span>`,
-    `<span class="td">—</span> ${D.publications.length} papers · <span class="tw">${D.publications.map(p=>p.venue.split(' ')[0]).join(' · ')}</span>`,
-    `<span class="td">—</span> status: <span style="color:rgba(247,242,232,.82)">PhD applicant · 2027</span>`,
-    `<span class="td">—</span> open to contact <span class="tcur"></span>`
+  // Contact terminal
+  const tls = [
+    `<span class="t-dim">—</span> survey complete`,
+    `<span class="t-dim">—</span> cartographer: <span class="t-gold">Vikrant Vikram</span>`,
+    `<span class="t-dim">—</span> ${DATA.publications.length} papers · <span class="t-hi">${DATA.publications.map(p=>p.venue.split(' ')[0]).join(' · ')}</span>`,
+    `<span class="t-dim">—</span> status: <span style="color:rgba(237,232,223,.8)">PhD applicant · 2027</span>`,
+    `<span class="t-dim">—</span> ready <span class="t-cur"></span>`
   ];
-  document.getElementById('ct-term').innerHTML=tls.map((l,i)=>`<div class="tl" id="tl${i}">${l}</div>`).join('');
-  document.getElementById('ct-links').innerHTML=D.contact.map(c=>`
-    <div class="clink">
-      <span class="clk">${c.key}</span>
-      ${c.href?`<a class="clv" href="${c.href}">${c.val}</a>`:`<span class="clv" style="opacity:.25">${c.val}</span>`}
+  document.getElementById('term').innerHTML = tls.map((l,i)=>`<div class="t-line" id="tl${i}">${l}</div>`).join('');
+  document.getElementById('ct-links').innerHTML = DATA.contact.map(c=>`
+    <div class="c-link">
+      <span class="c-key">${c.key}</span>
+      ${c.href?`<a class="c-val" href="${c.href}">${c.val}</a>`:`<span class="c-val" style="opacity:.18">${c.val}</span>`}
     </div>`).join('');
-}
 
-/* ════════════ SCROLL ════════════ */
-function initScroll(){
-  const rf=document.getElementById('ruleFill'),rp=document.getElementById('rulePct');
-  let exitDone=false;
-  const io=new IntersectionObserver(entries=>{
-    entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('in')});
-  },{threshold:.07,rootMargin:'0px 0px -40px 0px'});
-  document.querySelectorAll('.rv,.rvl').forEach(el=>io.observe(el));
-  window.addEventListener('scroll',()=>{
-    const sy=window.scrollY,max=document.body.scrollHeight-window.innerHeight;
-    const p=max>0?sy/max:0;
-    rf.style.height=(p*100)+'%';
-    rp.textContent=Math.round(p*100)+'%';
-    const ct=document.getElementById('s-ct');
-    if(ct&&sy>=ct.offsetTop-window.innerHeight*.65&&!exitDone){
-      exitDone=true;
-      for(let i=0;i<5;i++)setTimeout(()=>document.getElementById('tl'+i)?.classList.add('show'),100+i*260);
+  // Contact terminal reveal observer
+  const termObs = new IntersectionObserver(e=>{
+    if(e[0].isIntersecting){
+      for(let i=0;i<5;i++) setTimeout(()=>document.getElementById('tl'+i)?.classList.add('show'),100+i*220);
+      termObs.disconnect();
     }
-  },{passive:true});
+  },{threshold:.4});
+  const termEl = document.getElementById('term');
+  if(termEl) termObs.observe(termEl);
 }
 
-/* ════════════ PARALLAX ════════════ */
-(()=>{
-  const mon=document.getElementById('monument');
-  if(!mon)return;
-  let raf;
-  document.addEventListener('mousemove',e=>{
-    cancelAnimationFrame(raf);
-    raf=requestAnimationFrame(()=>{
-      const cx=window.innerWidth/2,cy=window.innerHeight/2;
-      mon.style.transform=`translate(calc(-50% + ${(e.clientX-cx)*.012}px), calc(-50% + ${(e.clientY-cy)*.009}px))`;
-    });
-  },{passive:true});
-})();
 
-const jmp=id=>document.querySelector(id)?.scrollIntoView({behavior:'smooth'});
-build();initScroll();
+const BOOT_LINES = [
+  '> INITIALIZING RESEARCH SYSTEM...',
+  '> Loading: Security Framework v2.5',
+  '> Loading: Hyperbolic Space Engine',
+  '> Loading: 4 active projects',
+  '> Loading: Knowledge graph [n='+DATA.nodes.length+' nodes, e='+DATA.edges.length+' edges]',
+  '> SYSTEM READY',
+];
+
+function runBoot() {
+  const container = document.getElementById('boot-lines');
+  BOOT_LINES.forEach((txt, i) => {
+    const span = document.createElement('span');
+    span.textContent = txt;
+    container.appendChild(span);
+    setTimeout(() => span.classList.add('show'), 300 + i * 280);
+  });
+  setTimeout(() => {
+    document.getElementById('boot-name').classList.add('show');
+    setTimeout(() => {
+      document.getElementById('boot').classList.add('done');
+      document.getElementById('nav').classList.add('show');
+      document.querySelectorAll('.scene-text').forEach(el => el.classList.add('vis'));
+    }, 900);
+  }, 300 + BOOT_LINES.length * 280 + 200);
+}
+
+
+let prevAnnotationVisible = false;
+let prevPubOrbitVisible = false;
+
+function updateScrollUI(p) {
+  document.getElementById('rule-fill').style.height = (p * 100) + '%';
+  document.getElementById('st-progress').textContent = Math.round(p * 100) + '%';
+
+  let secLabel = 'Security Research · Hyperbolic Space';
+  if (p < 0.12) secLabel = 'System Boot · Initializing';
+  else if (p < 0.35) secLabel = 'I / Security Core · Primary Identity';
+  else if (p < 0.55) secLabel = 'II / Research Projects · Survey Sites';
+  else if (p < 0.72) secLabel = 'III / Methods · Thinking Layer';
+  else if (p < 0.88) secLabel = 'IV / Publication Ring · Verified Work';
+  else secLabel = 'V / Full System · Overview';
+  document.getElementById('st-section').textContent = secLabel;
+
+  const annVis = p > 0.54 && p < 0.76;
+  if (annVis !== prevAnnotationVisible) {
+    document.querySelectorAll('.ann').forEach(a => a.classList.toggle('vis', annVis));
+    prevAnnotationVisible = annVis;
+  }
+
+  const pubVis = p > 0.74 && p < 0.96;
+  if (pubVis !== prevPubOrbitVisible) {
+    document.getElementById('pub-orbit').classList.toggle('vis', pubVis);
+    prevPubOrbitVisible = pubVis;
+    if (pubVis) {
+      // Animate pub dot active state
+      const dots = document.querySelectorAll('.po-dot');
+      let curr = 0;
+      setInterval(() => {
+        dots.forEach((d,i) => d.classList.toggle('active', i===curr));
+        curr = (curr + 1) % dots.length;
+      }, 1200);
+    }
+  }
+}
+
+const targetCamPos = new THREE.Vector3(0, 14, 36);
+const targetLookAt = new THREE.Vector3(0, 0, 0);
+const currentLookAt = new THREE.Vector3(0, 0, 0);
+let time = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  time += 0.008;
+
+  const p = getScrollProgress();
+  const kf = interpolateCamera(p);
+
+  const parallaxAmt = 0.6 * (1 - p * 0.5);
+  targetCamPos.set(
+    kf.pos.x + mouseX * parallaxAmt,
+    kf.pos.y + mouseY * parallaxAmt * 0.4,
+    kf.pos.z
+  );
+  targetLookAt.copy(kf.lk);
+
+  camera.position.lerp(targetCamPos, 0.055);
+  currentLookAt.lerp(targetLookAt, 0.055);
+  camera.lookAt(currentLookAt);
+
+  const panelOpen = document.getElementById('panel').classList.contains('open');
+  if (!panelOpen) {
+    graphGroup.rotation.y += 0.0008;
+  }
+
+  // Pub ring counter-rotates
+  pubGroup.rotation.y += 0.0015;
+
+  // Core node pulse
+  const coreMesh = nodeMeshes['security'];
+  if (coreMesh) {
+    const s = 1 + Math.sin(time * 1.2) * 0.04;
+    coreMesh.scale.setScalar(s);
+    if (coreMesh.userData.ring) coreMesh.userData.ring.rotation.y = time * 0.4;
+  }
+
+  // Project nodes subtle float
+  DATA.nodes.filter(n=>n.type==='project').forEach((n,i) => {
+    const m = nodeMeshes[n.id];
+    if (!m) return;
+    const base = nodePositions[n.id];
+    m.position.y = base.y + Math.sin(time * 0.6 + i * 1.4) * 0.12;
+    if (m.userData.glow) m.userData.glow.position.y = m.position.y;
+  });
+
+  // Hover detection
+  updateHover();
+
+  // Labels
+  updateLabels(p);
+
+  // Scroll UI
+  updateScrollUI(p);
+
+  renderer.render(scene, camera);
+}
+
+buildDOM();
+runBoot();
+animate();
+
+// Smooth anchor scrolling
+document.querySelectorAll('a.nlink[href^="#"]').forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(link.getAttribute('href'));
+    if (target) target.scrollIntoView({behavior:'smooth'});
+  });
+});
+
+window.closePanel = closePanel;
 </script>
 </body>
 </html>
