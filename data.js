@@ -1,6 +1,6 @@
 /* ════════════════════════════════════════════════════════════════════
-   Portfolio data — shared between index.html and admin.html
-   Persists in localStorage. Edit via /admin.html.
+   Portfolio data — read by index.html. Edit this file directly to update
+   planets, blog posts, and contact channels, then redeploy.
    ════════════════════════════════════════════════════════════════════ */
 
 window.PORTFOLIO_DEFAULTS = {

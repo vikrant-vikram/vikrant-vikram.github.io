@@ -198,15 +198,36 @@
   body.theme-night .action-btn.theme .arrow {
     background: radial-gradient(circle at 30% 30%, #fff, #B0C5FF 50%, #5070A0);
   }
-  .admin-link {
-    pointer-events: auto;
-    font-family: 'Space Mono', monospace; font-size: 8px;
-    letter-spacing: 0.32em; text-transform: uppercase;
-    color: rgba(237,232,223,0.32); text-decoration: none;
-    padding: 6px 10px;
-    transition: color 0.2s;
+  /* audio button */
+  .action-btn.audio {
+    border-color: rgba(110,200,200,0.3);
+    color: rgba(180,240,240,0.75);
+    background: rgba(8,18,22,0.55);
   }
-  .admin-link:hover { color: rgba(196,154,40,0.95); }
+  .action-btn.audio:hover {
+    background: rgba(110,200,200,0.14);
+    border-color: rgba(110,200,200,0.7);
+    color: rgba(220,255,255,1);
+  }
+  .action-btn.audio .arrow {
+    border: 1px solid currentColor; border-radius: 50%;
+    transform: none; width: 7px; height: 7px;
+    background: transparent; box-shadow: none;
+  }
+  .action-btn.audio.on {
+    border-color: rgba(110,200,200,0.85);
+    background: rgba(110,200,200,0.16);
+    color: rgba(220,255,255,1);
+  }
+  .action-btn.audio.on .arrow {
+    background: rgba(180,240,240,1);
+    box-shadow: 0 0 10px rgba(110,200,200,0.85);
+    animation: audio-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes audio-pulse {
+    0%,100% { transform: scale(1);   opacity: 1; }
+    50%     { transform: scale(1.4); opacity: 0.7; }
+  }
 
   /* ═════════ PLANET / STAR LABELS — minimal, only 'tag', avoids overlap ═════════ */
   #planet-labels { position: fixed; inset: 0; z-index: 18; pointer-events: none; }
@@ -630,15 +651,18 @@
     <span class="arrow"></span>
     <span>Open Dossier</span>
   </button>
-  <button class="action-btn theme" id="theme-toggle" type="button" aria-label="Toggle theme">
+  <button class="action-btn theme vis" id="theme-toggle" type="button" aria-label="Toggle theme">
     <span class="arrow"></span>
     <span id="theme-label">Auto</span>
   </button>
-  <a class="action-btn" id="resume-btn" href="resume.pdf" download="Vikrant_Vikram_Resume.pdf" aria-label="Download resume">
+  <button class="action-btn audio vis" id="audio-toggle" type="button" aria-label="Toggle ambient sound">
+    <span class="arrow"></span>
+    <span id="audio-label">Sound · off</span>
+  </button>
+  <a class="action-btn vis" id="resume-btn" href="resume.pdf" download="Vikrant_Vikram_Resume.pdf" aria-label="Download resume">
     <span class="arrow"></span>
     <span>Resume</span>
   </a>
-  <a class="admin-link" href="admin.html" aria-label="Admin">+ admin</a>
 </div>
 
 <div id="planet-labels"></div>
@@ -702,7 +726,7 @@
 <script src="data.js"></script>
 <script>
 /* ════════════════════════════════════════════════════════════════════
-   DATA — loaded from data.js (localStorage-backed). Edit via /admin.html.
+   DATA — loaded from data.js. To update, edit data.js directly and redeploy.
    ════════════════════════════════════════════════════════════════════ */
 
 const _PORTFOLIO = window.PORTFOLIO_LOAD ? window.PORTFOLIO_LOAD() : null;
@@ -862,7 +886,7 @@ const BLOG = [
   },
 ];
 
-/* ───── localStorage override (admin-edited data takes precedence) ───── */
+/* ───── localStorage override (if a saved snapshot exists, prefer it) ───── */
 if (_PORTFOLIO) {
   if (Array.isArray(_PORTFOLIO.planets) && _PORTFOLIO.planets.length) {
     PLANETS.length = 0; PLANETS.push(..._PORTFOLIO.planets);
@@ -875,7 +899,7 @@ if (_PORTFOLIO) {
   }
 }
 
-/* normalize visual colors to numbers (admin stores '#hex' strings; renderer expects numbers) */
+/* normalize visual colors to numbers (data.js may use either '#hex' strings or 0xHEX numbers) */
 PLANETS.forEach(p => {
   if (!p.visual) p.visual = {};
   p.visual.base   = _hex(p.visual.base   ?? 0x404040);
@@ -1121,6 +1145,109 @@ function updateUniverse(t, time) {
   universe.mat.opacity = 0.95 * startVis * focusFade * effectiveMul;
   const burst = Math.exp(-Math.pow((t - 0.10) / 0.06, 2)) * 0.6;
   universe.mat.size = 0.18 + burst;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   SHOOTING STARS — occasional streaks crossing the sky.
+   Bright head sprite + fading line trail. Spawn rate scales with stage.
+   ════════════════════════════════════════════════════════════════════ */
+
+const SHOOTING_STAR_TRAIL = 18;
+const N_SHOOTING_STARS = 6;
+const shootingStars = [];
+for (let i = 0; i < N_SHOOTING_STARS; i++) {
+  const positions = new Float32Array(SHOOTING_STAR_TRAIL * 3);
+  const colors    = new Float32Array(SHOOTING_STAR_TRAIL * 3);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+  const mat = new THREE.LineBasicMaterial({
+    vertexColors: true, transparent: true, opacity: 0,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const line = new THREE.Line(geo, mat);
+  scene.add(line);
+
+  const headMat = new THREE.SpriteMaterial({
+    map: STAR_PT_TEX, blending: THREE.AdditiveBlending,
+    transparent: true, opacity: 0, depthWrite: false, color: 0xfff5d8,
+  });
+  const head = new THREE.Sprite(headMat);
+  head.scale.set(0.4, 0.4, 1);
+  scene.add(head);
+
+  shootingStars.push({
+    line, mat, headMat, head,
+    positions, colors,
+    active: false,
+    velocity: new THREE.Vector3(),
+    headPos: new THREE.Vector3(),
+    trail: Array.from({ length: SHOOTING_STAR_TRAIL }, () => new THREE.Vector3()),
+    age: 0, lifetime: 1.4,
+  });
+}
+
+function spawnShootingStar() {
+  const s = shootingStars.find(x => !x.active);
+  if (!s) return;
+  /* spawn high above the disc, fly across and down */
+  const ang = Math.random() * Math.PI * 2;
+  const r = 28 + Math.random() * 22;
+  s.headPos.set(r * Math.cos(ang), 5 + Math.random() * 9, r * Math.sin(ang));
+  const dir = new THREE.Vector3(
+    -Math.cos(ang) * (1 + Math.random() * 0.5) + (Math.random() - 0.5) * 0.4,
+    -0.25 - Math.random() * 0.4,
+    -Math.sin(ang) * (1 + Math.random() * 0.5) + (Math.random() - 0.5) * 0.4
+  ).normalize();
+  s.velocity.copy(dir).multiplyScalar(38 + Math.random() * 24);
+  for (let i = 0; i < SHOOTING_STAR_TRAIL; i++) s.trail[i].copy(s.headPos);
+  s.lifetime = 1.1 + Math.random() * 0.8;
+  s.age = 0;
+  s.active = true;
+}
+
+function updateShootingStars(dt, t, stage) {
+  /* spawn rate by phase — only during cosmic / star / planet stages, never inside the BH */
+  let spawnChance = 0;
+  if (t > 0.15 && t < 0.30) spawnChance = 0.018;          /* condensation/galaxy */
+  else if (t > 0.30 && t < 0.65) spawnChance = 0.008;     /* star + planets */
+  else if (stage.name === 'The System · Overview') spawnChance = 0.012;
+  if (Math.random() < spawnChance) spawnShootingStar();
+
+  shootingStars.forEach(s => {
+    if (!s.active) {
+      s.mat.opacity = 0; s.headMat.opacity = 0;
+      return;
+    }
+    s.age += dt;
+    if (s.age > s.lifetime) {
+      s.active = false; s.mat.opacity = 0; s.headMat.opacity = 0;
+      return;
+    }
+    /* advance head, push old trail entries down */
+    s.headPos.addScaledVector(s.velocity, dt);
+    for (let i = 0; i < SHOOTING_STAR_TRAIL - 1; i++) s.trail[i].copy(s.trail[i+1]);
+    s.trail[SHOOTING_STAR_TRAIL - 1].copy(s.headPos);
+    /* write geometry — head bright (full color), tail fades to black */
+    for (let i = 0; i < SHOOTING_STAR_TRAIL; i++) {
+      const p = s.trail[i];
+      s.positions[i*3]   = p.x;
+      s.positions[i*3+1] = p.y;
+      s.positions[i*3+2] = p.z;
+      const c = i / (SHOOTING_STAR_TRAIL - 1);  /* 0=oldest faint, 1=newest bright */
+      s.colors[i*3]   = c;
+      s.colors[i*3+1] = c * 0.92;
+      s.colors[i*3+2] = c * 0.65;
+    }
+    s.line.geometry.attributes.position.needsUpdate = true;
+    s.line.geometry.attributes.color.needsUpdate    = true;
+    /* fade in fast, hold, fade out */
+    const lp = s.age / s.lifetime;
+    const a = lp < 0.15 ? lp / 0.15 : (lp > 0.7 ? (1 - (lp - 0.7) / 0.3) : 1);
+    s.mat.opacity = 0.85 * a;
+    s.headMat.opacity = 1.0 * a;
+    s.head.position.copy(s.headPos);
+  });
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1947,16 +2074,34 @@ function updateBlog(t, stage) {
 
   let activeIdx = -1;
   BLOG.forEach((post, i) => {
-    const localT = (t - post._start) / Math.max(1e-6, post._end - post._start);
-    const fadeIn  = THREE.MathUtils.smoothstep(localT, 0.0, 0.18);
-    const fadeOut = 1 - THREE.MathUtils.smoothstep(localT, 0.82, 1.0);
-    const vis = THREE.MathUtils.clamp(Math.min(fadeIn, fadeOut), 0, 1);
-    /* subtle vertical drift while reading */
-    const drift = (localT - 0.5) * -16;  /* -8 to +8 vh */
-    post._el.style.transform = `translate(-50%, calc(-50% + ${drift}vh))`;
-    post._el.style.opacity = vis.toFixed(3);
-    post._el.classList.toggle('vis', vis > 0.05);
-    if (vis > 0.5) activeIdx = i;
+    const span = Math.max(1e-6, post._end - post._start);
+    const localT = (t - post._start) / span;
+    let opacity, translateY;
+    if (localT < 0) {
+      /* not yet — sit safely below viewport so it can't bleed in */
+      opacity = 0; translateY = 65;
+    } else if (localT < 0.18) {
+      /* sliding up from below + fade in */
+      const k = localT / 0.18;
+      opacity = k;
+      translateY = (1 - k) * 38;
+    } else if (localT < 0.82) {
+      /* read window — fully visible with subtle drift */
+      opacity = 1;
+      translateY = ((localT - 0.5) / 0.32) * -2.5;
+    } else if (localT < 1.0) {
+      /* sliding up out + fade out */
+      const k = (localT - 0.82) / 0.18;
+      opacity = 1 - k;
+      translateY = -k * 38;
+    } else {
+      /* past — sit above viewport */
+      opacity = 0; translateY = -65;
+    }
+    post._el.style.transform = `translate(-50%, calc(-50% + ${translateY.toFixed(2)}vh))`;
+    post._el.style.opacity = opacity.toFixed(3);
+    post._el.classList.toggle('vis', opacity > 0.05);
+    if (opacity > 0.5) activeIdx = i;
     post._dot.classList.toggle('active', false);
     post._dot.classList.toggle('passed', t > post._end);
   });
@@ -2050,6 +2195,300 @@ function updateEnvironmentHUD() {
 applyEnvironment(envSnapshot);
 updateEnvironmentHUD();
 
+/* ════════════════════════════════════════════════════════════════════
+   AUDIO — procedural cosmic synth. Inspired by NASA plasma-wave
+   sonifications and ambient space records.
+
+   Architecture:
+     8 detuned oscillator voices (root, fifth, octaves) → low-pass filter →
+       │                                                     │
+       │  └─ LFO breathes the filter cutoff
+       │
+       ├─ dry → stereo panner → master
+       └─ convolver reverb (synthesised 5.5s impulse response) → stereo panner → master
+
+     + filtered noise "stardust" shimmer that fades in for galaxy / star
+     + DynamicsCompressor as a master limiter so it never clips
+
+   Per-stage profiles change rootHz, filter cutoff, shimmer level, stereo
+   pan amplitude, and a chord shape that maps voice indices to harmonic
+   ratios (e.g. octave below / root / fifth / octave / 2-octaves) so the
+   same engine can sound vast (galaxy), dense (planets), or sub-bass-only
+   (inside the event horizon).
+
+   Safari-hardened: async resume() awaited inside the click; every
+   AudioParam ramp is anchored with setValueAtTime; oscillators are only
+   started after the context is unlocked.
+   ════════════════════════════════════════════════════════════════════ */
+
+let audioCtx = null;
+let audioActive = false, audioStarted = false;
+let masterGain = null, panner = null;
+let dryGain = null, wetGain = null, reverbNode = null;
+let voiceFilter = null, lfoNode = null;
+let voices = [];   /* { osc, gain, type } — index 0..7 maps to specific harmonic role */
+let shimmerSource = null, shimmerGain = null;
+let audioLastUpdate = -1;
+const AUDIO_TARGET = 0.7;
+
+/* Synthesise a stereo decaying-noise impulse response — sounds like a vast, soft hall. */
+function makeReverbIR(ctx, seconds) {
+  const length = Math.floor(ctx.sampleRate * seconds);
+  const ir = ctx.createBuffer(2, length, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = ir.getChannelData(ch);
+    for (let i = 0; i < length; i++) {
+      const t = i / length;
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 2.4) * 0.7;
+    }
+  }
+  return ir;
+}
+
+function setupAudio() {
+  if (audioCtx) return true;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return false;
+  try { audioCtx = new Ctx(); }
+  catch (e) { console.warn('AudioContext unavailable:', e); return false; }
+
+  /* master limiter so peaks never clip when many voices stack up */
+  const limiter = audioCtx.createDynamicsCompressor();
+  limiter.threshold.value = -3;
+  limiter.knee.value = 6;
+  limiter.ratio.value = 8;
+  limiter.attack.value = 0.003;
+  limiter.release.value = 0.25;
+  limiter.connect(audioCtx.destination);
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0;
+  masterGain.connect(limiter);
+
+  /* stereo panner — gives the cosmos motion as you scroll */
+  panner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : audioCtx.createGain();
+  panner.connect(masterGain);
+
+  /* dry / wet split — convolution reverb on the wet bus */
+  dryGain = audioCtx.createGain(); dryGain.gain.value = 0.55; dryGain.connect(panner);
+  wetGain = audioCtx.createGain(); wetGain.gain.value = 0.50; wetGain.connect(panner);
+
+  reverbNode = audioCtx.createConvolver();
+  reverbNode.buffer = makeReverbIR(audioCtx, 5.5);
+  reverbNode.connect(wetGain);
+
+  /* main voice bus — single low-pass filter shapes the whole tone */
+  voiceFilter = audioCtx.createBiquadFilter();
+  voiceFilter.type = 'lowpass';
+  voiceFilter.frequency.value = 1400;
+  voiceFilter.Q.value = 1.4;
+  voiceFilter.connect(dryGain);
+  voiceFilter.connect(reverbNode);
+
+  /* slow LFO breathing the cutoff (~0.06 Hz) */
+  lfoNode = audioCtx.createOscillator();
+  lfoNode.type = 'sine';
+  lfoNode.frequency.value = 0.06;
+  const lfoG = audioCtx.createGain(); lfoG.gain.value = 380;
+  lfoNode.connect(lfoG).connect(voiceFilter.frequency);
+
+  /* Voices in detuned pairs — natural chorus/beating, much warmer than single oscillators.
+     Index 0–1: sub-bass (octave below root)
+     Index 2–3: root
+     Index 4–5: perfect fifth
+     Index 6:   octave above root
+     Index 7:   two octaves above (subtle harmonic shimmer) */
+  function voice(type, freq, detuneCents, level) {
+    const o = audioCtx.createOscillator();
+    o.type = type; o.frequency.value = freq; o.detune.value = detuneCents;
+    const g = audioCtx.createGain(); g.gain.value = level;
+    o.connect(g).connect(voiceFilter);
+    return { osc: o, gain: g, type };
+  }
+  voices = [
+    voice('sine',     55,  +6, 0.13),  /* 0 sub bass left */
+    voice('sine',     55,  -6, 0.13),  /* 1 sub bass right */
+    voice('sawtooth', 110, +4, 0.09),  /* 2 root */
+    voice('sawtooth', 110, -4, 0.09),  /* 3 root detuned */
+    voice('triangle', 165, +3, 0.07),  /* 4 fifth */
+    voice('triangle', 165, -3, 0.07),  /* 5 fifth detuned */
+    voice('sine',     220, 0,  0.06),  /* 6 octave */
+    voice('sine',     440, 0,  0.04),  /* 7 high shimmer */
+  ];
+
+  /* Stardust shimmer — band-passed white noise that fades in at galactic scale */
+  const noiseLen = audioCtx.sampleRate * 4;
+  const noiseBuf = audioCtx.createBuffer(1, noiseLen, audioCtx.sampleRate);
+  const noiseData = noiseBuf.getChannelData(0);
+  for (let i = 0; i < noiseLen; i++) noiseData[i] = (Math.random() * 2 - 1) * 0.5;
+  shimmerSource = audioCtx.createBufferSource();
+  shimmerSource.buffer = noiseBuf; shimmerSource.loop = true;
+
+  const sHP = audioCtx.createBiquadFilter();
+  sHP.type = 'highpass'; sHP.frequency.value = 5500; sHP.Q.value = 0.7;
+  const sLP = audioCtx.createBiquadFilter();
+  sLP.type = 'lowpass';  sLP.frequency.value = 12000; sLP.Q.value = 0.5;
+  shimmerGain = audioCtx.createGain(); shimmerGain.gain.value = 0;
+
+  shimmerSource.connect(sHP).connect(sLP).connect(shimmerGain);
+  shimmerGain.connect(dryGain);
+  shimmerGain.connect(reverbNode);
+
+  return true;
+}
+
+function startOscillatorsOnce() {
+  if (audioStarted) return;
+  try {
+    /* Safari drops oscillators started while the context is suspended,
+       so .start() everything only after resume(). */
+    lfoNode.start();
+    voices.forEach(v => v.osc.start());
+    if (shimmerSource) shimmerSource.start();
+    audioStarted = true;
+  } catch (e) { /* already started */ }
+}
+
+async function toggleAudio() {
+  if (!setupAudio()) {
+    document.getElementById('audio-label').textContent = 'Sound · n/a';
+    return;
+  }
+  if (audioCtx.state === 'suspended') {
+    try { await audioCtx.resume(); } catch (e) { console.warn('resume failed', e); }
+  }
+  startOscillatorsOnce();
+
+  audioActive = !audioActive;
+  const target = audioActive ? AUDIO_TARGET : 0;
+  const now = audioCtx.currentTime;
+  masterGain.gain.cancelScheduledValues(now);
+  masterGain.gain.setValueAtTime(Math.max(masterGain.gain.value, 0.0001), now);
+  masterGain.gain.linearRampToValueAtTime(target, now + 1.2);
+
+  document.getElementById('audio-toggle').classList.toggle('on', audioActive);
+  document.getElementById('audio-label').textContent = audioActive ? 'Sound · on' : 'Sound · off';
+}
+document.getElementById('audio-toggle').addEventListener('click', toggleAudio);
+
+/* AudioParam ramp helper — anchors with setValueAtTime so Safari behaves */
+function _ramp(param, target, dur, now) {
+  param.cancelScheduledValues(now);
+  param.setValueAtTime(param.value, now);
+  param.linearRampToValueAtTime(target, now + dur);
+}
+
+/* Apply a chord shape — voice index → frequency multiplier of root.
+   Shape can be 'fifth', 'minor', 'octave', or 'sub-only'. */
+const CHORD_RATIOS = {
+  fifth:    [0.5, 0.5, 1, 1, 1.5,    1.5,    2, 4],   /* major-ish */
+  minor:    [0.5, 0.5, 1, 1, 1.4983, 1.4983, 2, 3.5651],  /* minor third + fifth */
+  octave:   [0.5, 0.5, 1, 1, 2,      2,      4, 8],   /* big & open */
+  'sub-only':[0.5,0.5, 1, 1, 0,      0,      0, 0],   /* black hole — sub bass only */
+};
+
+function applyChord(rootHz, shape, dur, now) {
+  const ratios = CHORD_RATIOS[shape] || CHORD_RATIOS.fifth;
+  voices.forEach((v, i) => {
+    const target = rootHz * ratios[i];
+    if (target < 1) {
+      /* mute voice by ramping its gain down */
+      _ramp(v.gain.gain, 0, dur, now);
+    } else {
+      _ramp(v.osc.frequency, target, dur, now);
+      /* restore default mix gain if it was muted */
+      const def = [0.13, 0.13, 0.09, 0.09, 0.07, 0.07, 0.06, 0.04][i];
+      if (Math.abs(v.gain.gain.value - def) > 0.001 && ratios[i] > 0) {
+        _ramp(v.gain.gain, def, dur, now);
+      }
+    }
+  });
+}
+
+function updateAudioForScene(t, stage) {
+  if (!audioCtx || !audioActive || !audioStarted) return;
+  const now = audioCtx.currentTime;
+  if (now - audioLastUpdate < 0.35) return;
+  audioLastUpdate = now;
+
+  /* === Stage profile === */
+  let rootHz = 110, cutoff = 1400, intensity = 1.0;
+  let shimmerLvl = 0, panAmp = 0, panRate = 0.12;
+  let chord = 'fifth';
+
+  if (stage.name === 'Singularity') {
+    rootHz = 55; cutoff = 220; intensity = 0.30;
+    chord = 'sub-only';
+  }
+  else if (stage.name === 'Big Bang') {
+    /* exponential pitch sweep + filter opening + shimmer arrival */
+    const k = (t - stage.start) / Math.max(1e-6, stage.end - stage.start);
+    rootHz = 30 * Math.pow(4, k);                /* 30 → 120 Hz exponentially */
+    cutoff = 200 + k * 1800;
+    intensity = 0.55 + k * 0.95;
+    shimmerLvl = k * 0.55;
+    chord = 'octave';
+  }
+  else if (stage.name === 'Condensation') {
+    rootHz = 82; cutoff = 1200; intensity = 1.0;
+    shimmerLvl = 0.30; chord = 'octave';
+  }
+  else if (stage.name === 'Galaxy') {
+    rootHz = 110; cutoff = 1500; intensity = 0.95;
+    shimmerLvl = 0.55; panAmp = 0.45; chord = 'fifth';
+  }
+  else if (stage.name === 'The Star · Security') {
+    /* warm major chord, bright filter — the star is benevolent */
+    rootHz = 165; cutoff = 1900; intensity = 1.10;
+    shimmerLvl = 0.65; panAmp = 0.20; chord = 'fifth';
+  }
+  else if (stage.planetIndex !== undefined) {
+    /* Pentatonic intervals (semitones) so any number of planets stays musical */
+    const PENT = [0, 3, 5, 7, 10, 12, 15, 17, 19, 22, 24];
+    const semis = PENT[stage.planetIndex % PENT.length]
+                + Math.floor(stage.planetIndex / PENT.length) * 12;
+    rootHz = 110 * Math.pow(2, semis / 12);
+    cutoff = 1100;
+    intensity = 0.95;
+    shimmerLvl = 0.35; panAmp = 0.30;
+    chord = (stage.planetIndex % 3 === 1) ? 'minor' : 'fifth';
+  }
+  else if (stage.blackHole) {
+    if (t < stage.approachFrac) {
+      const k = (t - stage.start) / Math.max(1e-6, stage.approachFrac - stage.start);
+      /* gravitational redshift — exponential pitch descent */
+      rootHz = 110 * Math.pow(0.32, k);
+      cutoff = 1400 - k * 1180;
+      intensity = 1.0 + k * 0.55;
+      shimmerLvl = 0.4 - k * 0.4;
+      chord = k > 0.5 ? 'minor' : 'fifth';
+    } else {
+      /* inside event horizon — sub bass only, with slow LFO wobble for dread */
+      rootHz = 30 + Math.sin(now * 0.22) * 4;
+      cutoff = 220;
+      intensity = 1.45;
+      shimmerLvl = 0;
+      chord = 'sub-only';
+    }
+  }
+  else if (stage.name === 'The System · Overview') {
+    rootHz = 220; cutoff = 1500; intensity = 0.85;
+    shimmerLvl = 0.55; panAmp = 0.50; chord = 'octave';
+  }
+  else if (stage.name === 'Transmission') {
+    rootHz = 330; cutoff = 1900; intensity = 0.70;
+    shimmerLvl = 0.65; chord = 'fifth';
+  }
+
+  applyChord(rootHz, chord, 0.7, now);
+  _ramp(voiceFilter.frequency, cutoff, 0.8, now);
+  _ramp(masterGain.gain,       AUDIO_TARGET * intensity, 0.6, now);
+  _ramp(shimmerGain.gain,      shimmerLvl * 0.18,        0.8, now);
+  if (panner.pan) {
+    _ramp(panner.pan, Math.sin(now * panRate) * panAmp, 0.5, now);
+  }
+}
+
 /* theme toggle button — cycles auto → day → night → auto */
 const themeLabelEl = document.getElementById('theme-label');
 function setThemePref(name) {
@@ -2088,7 +2527,8 @@ function updateHUD(t, stage) {
 
   document.getElementById('transmission').classList.toggle('vis', t >= STAGES[STAGES.length - 1].start + 0.005);
   document.getElementById('scroll-prompt').classList.toggle('vis', t < STAGES[0].end && t >= 0);
-  document.getElementById('resume-btn').classList.toggle('vis', showHud);
+  /* resume / theme / audio buttons keep the .vis class set in HTML — they're
+     always visible after boot (the boot overlay covers the screen during boot). */
 
   if (inPlanet) {
     currentFocusedPlanet = stage.planetIndex;
@@ -2221,6 +2661,8 @@ function animate() {
   updateAnnotations(t, stage);
   updateBlog(t, stage);
   updateHUD(t, stage);
+  updateShootingStars(0.016, t, stage);
+  updateAudioForScene(t, stage);
 
   /* compute lens intensity based on BH visibility */
   let lensIntensity = 0;
